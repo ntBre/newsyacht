@@ -1,0 +1,50 @@
+name: Test
+
+env:
+  # Enable colored output for pytest
+  # https://github.com/pytest-dev/pytest/issues/7443
+  # https://github.com/actions/runner/issues/241
+  PY_COLORS: 1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+# Limit concurrency by workflow/branch combination
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  python-tests:
+    name: python-${{ matrix.python-version }}, ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.14"
+
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Run tests
+        run: |
+          uv run --python ${{ matrix.python-version }} -- pytest tests
