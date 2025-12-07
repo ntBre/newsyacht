@@ -1,0 +1,44 @@
+name: Check
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  run-checks:
+    name: ${{ matrix.os }}
+    timeout-minutes: 5
+
+    strategy:
+      matrix:
+        os:
+          - "ubuntu-latest"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Lint Python
+        run: |
+          uv run -- ruff check
+
+      - name: Check Python formatting
+        run: |
+          uv run -- ruff format --check
+
+      - name: Check types
+        run: |
+          uv run -- ty check
+
+      - name: Check packaging
+        run: |
+          uv lock --check
