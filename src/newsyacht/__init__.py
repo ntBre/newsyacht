@@ -13,6 +13,13 @@ def then[T, U](x: T | None, f: Callable[[T], U | None]) -> U | None:
 
 @dataclass
 class Item:
+    """
+    A entry in an RSS `Feed`.
+
+    This is the deserialized representation from the XML document without any
+    of the internal data tracked in the database.
+    """
+
     title: str | None
     description: str | None
     link: str | None
@@ -22,6 +29,13 @@ class Item:
 
 @dataclass
 class Feed:
+    """
+    A single RSS feed.
+
+    This is the deserialized representation from the XML document without any
+    of the internal data tracked in the database.
+    """
+
     title: str | None
     link: str | None
     description: str | None
@@ -29,6 +43,10 @@ class Feed:
 
     @classmethod
     def from_xml(cls, tree: ElementTree.ElementTree[ElementTree.Element[str]]) -> Self:
+        """
+        Deserialize a `Feed` from an XML document.
+        """
+
         root = tree.getroot()
         assert root is not None and root.tag == "rss", "Expected root tag to be <rss>"
 
