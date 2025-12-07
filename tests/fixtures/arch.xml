@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Arch Linux: Recent news updates</title><link>https://archlinux.org/news/</link><description>The latest and greatest news from the Arch Linux distribution.</description><atom:link href="https://archlinux.org/feeds/news/" rel="self"/><language>en-us</language><lastBuildDate>Thu, 06 Nov 2025 01:02:56 +0000</lastBuildDate><item><title>waydroid &gt;= 1.5.4-3 update may require manual intervention</title><link>https://archlinux.org/news/waydroid-154-3-update-may-require-manual-intervention/</link><description>&lt;p&gt;The &lt;code&gt;waydroid&lt;/code&gt; package prior to version &lt;code&gt;1.5.4-2&lt;/code&gt; (including &lt;code&gt;aur/waydroid&lt;/code&gt;) creates Python byte-code files (.pyc) at runtime which were untracked by pacman. This issue has been fixed in &lt;code&gt;1.5.4-3&lt;/code&gt;, where byte-compiling these files is now done during the packaging process.&lt;/p&gt;
+&lt;p&gt;As a result, the upgrade may conflict with the unowned files created in previous versions. If you encounter errors like the following during the update:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;error: failed to commit transaction (conflicting files)&lt;/p&gt;
+&lt;p&gt;waydroid: /usr/lib/waydroid/tools/__pycache__/__init__.cpython-313.pyc exists in filesystem&lt;/p&gt;
+&lt;p&gt;waydroid: /usr/lib/waydroid/tools/actions/__pycache__/__init__.cpython-313.pyc exists in filesystem&lt;/p&gt;
+&lt;p&gt;waydroid: /usr/lib/waydroid/tools/actions/__pycache__/app_manager.cpython-313.pyc exists in filesystem&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;You can safely overwrite these files by running the following command:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;pacman -Syu --overwrite /usr/lib/waydroid/tools/\*__pycache__/\*&lt;/code&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">George Hu</dc:creator><pubDate>Thu, 06 Nov 2025 00:35:08 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-11-06:/news/waydroid-154-3-update-may-require-manual-intervention/</guid></item><item><title>dovecot &gt;= 2.4 requires manual intervention</title><link>https://archlinux.org/news/dovecot-24-requires-manual-intervention/</link><description>&lt;p&gt;The dovecot 2.4 release branch has made breaking changes which result
+in it being incompatible with any &amp;lt;= 2.3 configuration file.&lt;/p&gt;
+&lt;p&gt;Thus, the dovecot service will no longer be able to start until the
+configuration file was migrated, requiring manual intervention.&lt;/p&gt;
+&lt;p&gt;For guidance on the 2.3-to-2.4 migration, please refer to the
+following upstream documentation:
+&lt;a href="https://doc.dovecot.org/latest/installation/upgrade/2.3-to-2.4.html"&gt;Upgrading Dovecot CE from 2.3 to 2.4&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Furthermore, the dovecot 2.4 branch no longer supports their
+replication feature, it was removed.&lt;/p&gt;
+&lt;p&gt;For users relying on the replication feature or who are unable to
+perform the 2.4 migration right now, we provide alternative packages
+available in [extra]:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;dovecot23&lt;/li&gt;
+&lt;li&gt;pigeonhole23&lt;/li&gt;
+&lt;li&gt;dovecot23-fts-elastic&lt;/li&gt;
+&lt;li&gt;dovecot23-fts-xapian&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The dovecot 2.3 release branch is going to &lt;a href="https://dovecot.org/mailman3/archives/list/dovecot@dovecot.org/thread/3P45L76DOC3NKUNSSPIXQNKINGOCYH5K/"&gt;receive critical security
+fixes&lt;/a&gt;
+from upstream until stated otherwise.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Thore Bödecker</dc:creator><pubDate>Fri, 31 Oct 2025 21:20:51 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-10-31:/news/dovecot-24-requires-manual-intervention/</guid></item><item><title>Recent service outages</title><link>https://archlinux.org/news/recent-services-outages/</link><description>&lt;p&gt;We want to provide an update on the recent &lt;a href="https://lists.archlinux.org/archives/list/arch-general@lists.archlinux.org/thread/EU4NXRX6DDJAACOWIRZNU4S5KVXEUI72/"&gt;service outages&lt;/a&gt; affecting our infrastructure. The Arch Linux Project is currently experiencing an ongoing denial of service attack that primarily impacts our main webpage, the Arch User Repository (AUR), and the Forums.&lt;/p&gt;
+&lt;p&gt;We are aware of the problems that this creates for our end users and will continue to actively work with our hosting provider to mitigate the attack. We are also evaluating DDoS protection providers while carefully considering factors including cost, security, and ethical standards.&lt;/p&gt;
+&lt;p&gt;To improve the communication around this issue we will provide regular updates on our &lt;a href="https://status.archlinux.org"&gt;service status page&lt;/a&gt; going forward.&lt;/p&gt;
+&lt;p&gt;As a volunteer-driven project, we appreciate the community's patience as our DevOps team works to resolve these issues. Please bear with us and thank you for all the support you have shown so far.&lt;/p&gt;
+&lt;h2&gt;Workarounds during service disruption&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;In the case of downtime for archlinux.org:&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Mirrors&lt;/strong&gt;: The mirror list endpoint used in tools like &lt;code&gt;reflector&lt;/code&gt; is hosted on this site. Please default to the mirrors listed in the &lt;code&gt;pacman-mirrorlist&lt;/code&gt; package during an outage.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;ISO&lt;/strong&gt;: Our installation image is available on a lot of the mirrors, for example the DevOps administered &lt;a href="https://geo.mirror.pkgbuild.com/iso/"&gt;geomirrors&lt;/a&gt;. Please always verify its integrity as &lt;a href="https://wiki.archlinux.org/title/Installation_guide#Verify_signature"&gt;described on the wiki&lt;/a&gt; and confirm it is signed by &lt;code&gt;0x3E80CA1A8B89F69CBA57D98A76A5EF9054449A5C&lt;/code&gt; (or other trusted keys that may be used in the future).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;In the case of downtime for aur.archlinux.org:&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Packages&lt;/strong&gt;: We maintain a &lt;a href="https://github.com/archlinux/aur"&gt;mirror of AUR packages&lt;/a&gt; on GitHub. You can retrieve a package using:
+  &lt;code&gt;$ git clone --branch &amp;lt;package_name&amp;gt; --single-branch https://github.com/archlinux/aur.git &amp;lt;package_name&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;In the case of downtime for wiki.archlinux.org:&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Docs&lt;/strong&gt;: The &lt;code&gt;arch-wiki-docs&lt;/code&gt; and &lt;code&gt;arch-wiki-lite&lt;/code&gt; contain recent snapshots of the articles as hosted on the Arch Linux wiki.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Additional remarks&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Our services may send an initial connection reset due to the TCP SYN authentication performed by our hosting provider, but subsequent requests should work as expected.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;We are keeping technical details about the attack, its origin and our mitigation tactics internal while the attack is still ongoing.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Christian Heusel</dc:creator><pubDate>Thu, 21 Aug 2025 22:01:13 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-08-21:/news/recent-services-outages/</guid></item><item><title>zabbix &gt;= 7.4.1-2 may require manual intervention</title><link>https://archlinux.org/news/zabbix-741-2-may-requires-manual-intervention/</link><description>&lt;p&gt;Starting with &lt;code&gt;7.4.1-2&lt;/code&gt;, the following Zabbix system user accounts (previously shipped by their related packages) will no longer be used. Instead, all Zabbix components will now rely on a shared &lt;code&gt;zabbix&lt;/code&gt; user account (as originally &lt;a href="https://www.zabbix.com/documentation/current/en/manual/installation/install#create-user-account"&gt;intended by upstream&lt;/a&gt; and done by other distributions):&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;zabbix-server&lt;/li&gt;
+&lt;li&gt;zabbix-proxy&lt;/li&gt;
+&lt;li&gt;zabbix-agent &lt;em&gt;(also used by the &lt;code&gt;zabbix-agent2&lt;/code&gt; package)&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;zabbix-web-service&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This shared &lt;code&gt;zabbix&lt;/code&gt; user account is provided by the newly introduced &lt;code&gt;zabbix-common&lt;/code&gt; &lt;em&gt;split&lt;/em&gt; package, which is now a dependency for all relevant &lt;code&gt;zabbix-*&lt;/code&gt; packages.&lt;/p&gt;
+&lt;p&gt;The switch to the new user account is handled automatically for the corresponding main configuration files and &lt;code&gt;systemd&lt;/code&gt; service units.&lt;/p&gt;
+&lt;p&gt;However, &lt;strong&gt;manual intervention may be required&lt;/strong&gt; if you created custom files or configurations referencing to and / or being owned by the above deprecated users accounts, for example:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;PSK&lt;/code&gt; files used for encrypted communication&lt;/li&gt;
+&lt;li&gt;Custom scripts for metrics collections or report generations&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sudoers&lt;/code&gt; rules for metrics requiring elevated privileges to be collected&lt;/li&gt;
+&lt;li&gt;...&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Those should therefore be updated to refer to and / or be owned by the new &lt;code&gt;zabbix&lt;/code&gt; user account, otherwise some services or user parameters may fail to work properly, or not at all.&lt;/p&gt;
+&lt;p&gt;Once migrated, you may &lt;a href="https://wiki.archlinux.org/title/Users_and_groups#Other_examples_of_user_management"&gt;remove the obsolete user accounts from your system&lt;/a&gt;.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Robin Candau</dc:creator><pubDate>Mon, 04 Aug 2025 14:58:22 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-08-04:/news/zabbix-741-2-may-requires-manual-intervention/</guid></item><item><title>linux-firmware &gt;= 20250613.12fe085f-5 upgrade requires manual intervention</title><link>https://archlinux.org/news/linux-firmware-2025061312fe085f-5-upgrade-requires-manual-intervention/</link><description>&lt;p&gt;With &lt;code&gt;20250613.12fe085f-5&lt;/code&gt;, we split our firmware into several vendor-focused packages. &lt;code&gt;linux-firmware&lt;/code&gt; is now an empty package depending on our default set of firmware.&lt;/p&gt;
+&lt;p&gt;Unfortunately, this coincided with upstream reorganizing the symlink layout of the NVIDIA firmware, resulting in a situation that Pacman cannot handle. When attempting to upgrade from &lt;code&gt;20250508.788aadc8-2&lt;/code&gt; or earlier, you will see the following errors:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;linux-firmware-nvidia: /usr/lib/firmware/nvidia/ad103 exists in filesystem
+linux-firmware-nvidia: /usr/lib/firmware/nvidia/ad104 exists in filesystem
+linux-firmware-nvidia: /usr/lib/firmware/nvidia/ad106 exists in filesystem
+linux-firmware-nvidia: /usr/lib/firmware/nvidia/ad107 exists in filesystem
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To progress with the system upgrade, first remove &lt;code&gt;linux-firmware&lt;/code&gt;, then reinstall it as part of the upgrade:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# pacman -Rdd linux-firmware
+# pacman -Syu linux-firmware
+&lt;/code&gt;&lt;/pre&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jan Alexander Steffens</dc:creator><pubDate>Sat, 21 Jun 2025 23:09:08 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-06-21:/news/linux-firmware-2025061312fe085f-5-upgrade-requires-manual-intervention/</guid></item><item><title>Plasma 6.4.0 will need manual intervention if you are on X11</title><link>https://archlinux.org/news/plasma-640-will-need-manual-intervention-if-you-are-on-x11/</link><description>&lt;p&gt;On Plasma 6.4 the wayland session will be the only one installed when the users does not manually specify kwin-x11.&lt;/p&gt;
+&lt;p&gt;With the recent split of kwin into kwin-wayland and kwin-x11, users running the old X11 session needs to manually install plasma-x11-session, or they will not be able to login. Currently pacman is not able to figure out your personal setup, and it wouldn't be ok to install plasma-x11-session and kwin-x11 for every
+one using Plasma.&lt;/p&gt;
+&lt;h3&gt;tldr: Install plasma-x11-session if you are still using x11&lt;/h3&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tomaz Canabrava</dc:creator><pubDate>Fri, 20 Jun 2025 07:08:17 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-06-20:/news/plasma-640-will-need-manual-intervention-if-you-are-on-x11/</guid></item><item><title>Transition to the new WoW64 wine and wine-staging</title><link>https://archlinux.org/news/transition-to-the-new-wow64-wine-and-wine-staging/</link><description>&lt;p&gt;We are transitioning the wine and wine-staging package to a pure &lt;a href="https://gitlab.winehq.org/wine/wine/-/releases/wine-9.0#wow64"&gt;wow64&lt;/a&gt; build. This change removes the dependency on the multilib repository for wine and wine-staging.&lt;/p&gt;
+&lt;p&gt;The main reason for this is to align with upstream Wine development, which simplifies packaging and the dependency chain.&lt;/p&gt;
+&lt;p&gt;Potential Issues:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;OpenGL Performance: A known limitation of the new WoW64 mode is reduced performance for 32-bit applications that use OpenGL directly&lt;/li&gt;
+&lt;li&gt;Breaking Changes: Existing 32-bit prefixes needs to be recreated&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;If you are facing issues with 32 bit prefixes, please recreate these and reinstall the application.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Peter Jung</dc:creator><pubDate>Mon, 16 Jun 2025 16:22:01 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-06-16:/news/transition-to-the-new-wow64-wine-and-wine-staging/</guid></item><item><title>Valkey to replace Redis in the [extra] Repository</title><link>https://archlinux.org/news/valkey-to-replace-redis-in-the-extra-repository/</link><description>&lt;p&gt;Valkey, a high-performance key/value datastore, will be replacing redis in the [extra] repository. This change is due to Redis modifying its license from BSD-3-Clause to RSALv2 and SSPLv1 on &lt;a href="https://github.com/redis/redis/commit/0b34396924eca4edc524469886dc5be6c77ec4ed"&gt;March 20th, 2024&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Arch Linux Package Maintainers intend to support the availability of the redis package for roughly 14 days from the day of this post, to enable a smooth transition to valkey. After the 14 day transition period has ended, the redis package will be moved to the AUR. Also, from this point forward, the redis package will not receive any additional updates and should be considered deprecated until it is removed.&lt;/p&gt;
+&lt;p&gt;Users are recommended to begin transitioning their use of Redis to Valkey as soon as possible to avoid possible complications after the 14 day transition window closes.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andrew Crerar</dc:creator><pubDate>Thu, 17 Apr 2025 13:16:29 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-04-17:/news/valkey-to-replace-redis-in-the-extra-repository/</guid></item><item><title>Cleaning up old repositories</title><link>https://archlinux.org/news/cleaning-up-old-repositories/</link><description>&lt;p&gt;Around two years ago, we've merged the &lt;code&gt;[community]&lt;/code&gt; repository into &lt;code&gt;[extra]&lt;/code&gt; as part of the &lt;a href="https://archlinux.org/news/git-migration-completed/"&gt;git migration&lt;/a&gt;.
+In order to not break user setups, 
+we kept these repositories around in an unused and empty state.
+We're going to clean up these old repositories on &lt;strong&gt;2025-03-01&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;On systems where &lt;code&gt;/etc/pacman.conf&lt;/code&gt; still references the old 
+&lt;code&gt;[community]&lt;/code&gt; repository, &lt;code&gt;pacman -Sy&lt;/code&gt; will return an error on trying to 
+sync repository metadata.&lt;/p&gt;
+&lt;p&gt;The following deprecated repositories will be removed: &lt;code&gt;[community]&lt;/code&gt;, 
+&lt;code&gt;[community-testing]&lt;/code&gt;, &lt;code&gt;[testing]&lt;/code&gt;, &lt;code&gt;[testing-debug]&lt;/code&gt;, &lt;code&gt;[staging]&lt;/code&gt;, 
+&lt;code&gt;[staging-debug]&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Please make sure to remove all use of the aforementioned repositories from your &lt;code&gt;/etc/pacman.conf&lt;/code&gt; (for which a &lt;code&gt;.pacnew&lt;/code&gt; was shipped with &lt;code&gt;pacman&amp;gt;=6.0.2-7&lt;/code&gt;)!&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Sven-Hendrik Haase</dc:creator><pubDate>Mon, 17 Feb 2025 00:30:30 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-02-17:/news/cleaning-up-old-repositories/</guid></item><item><title>Glibc 2.41 corrupting Discord installation</title><link>https://archlinux.org/news/glibc-241-corrupting-discord-installation/</link><description>&lt;p&gt;We plan to move &lt;code&gt;glibc&lt;/code&gt; and its friends to stable later today, Feb 3. After installing the update, the Discord client will show a red warning that the installation is corrupt.&lt;/p&gt;
+&lt;p&gt;This issue has been fixed in the Discord canary build. If you rely on audio connectivity, please use the canary build, login via browser or the flatpak version until the fix hits the stable Discord release.&lt;/p&gt;
+&lt;p&gt;There have been no reports that (written) chat connectivity is affected.&lt;/p&gt;
+&lt;p&gt;UPDATE: The issue has been fixed in Discord &lt;code&gt;0.0.84-1&lt;/code&gt;.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Frederik Schwan</dc:creator><pubDate>Mon, 03 Feb 2025 11:24:25 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2025-02-03:/news/glibc-241-corrupting-discord-installation/</guid></item></channel></rss>
