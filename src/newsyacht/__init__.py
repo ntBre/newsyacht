@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Self
 from xml.etree import ElementTree
 
@@ -77,6 +78,10 @@ class Feed:
             )
 
         return cls(title=title, link=link, description=description, items=items)
+
+
+def load_urls(path) -> list[str]:
+    return [url.strip() for url in Path(path).read_text().splitlines()]
 
 
 def main() -> None:
