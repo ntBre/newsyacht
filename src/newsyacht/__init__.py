@@ -1,7 +1,13 @@
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Self
 from xml.etree import ElementTree
+
+import httpx
+
+logger = logging.getLogger(__name__)
+logging.basicConfig()
 
 
 def then[T, U](x: T | None, f: Callable[[T], U | None]) -> U | None:
@@ -43,7 +49,12 @@ class Feed:
     items: list[Item]
 
     @classmethod
-    def from_xml(cls, tree: ElementTree.ElementTree[ElementTree.Element[str]]) -> Self:
+    def from_xml(cls, xml: str) -> Self:
+        tree = ElementTree.ElementTree(ElementTree.fromstring(xml))
+        return cls._from_xml(tree)
+
+    @classmethod
+    def _from_xml(cls, tree: ElementTree.ElementTree[ElementTree.Element[str]]) -> Self:
         """
         Deserialize a `Feed` from an XML document.
         """
@@ -81,15 +92,82 @@ class Feed:
 
 
 def load_urls(path) -> list[str]:
+    """
+    Load a sequence of URLs from `path`, one per line.
+    """
     return [url.strip() for url in Path(path).read_text().splitlines()]
 
 
+def update_feeds(feeds: list[DbFeed]):
+    """
+    Fetch a list of feeds and update them in place.
+    """
+    for feed in feeds:
+        # TODO include etag and last_modified, extracted from ETag and
+        # Last-Modified headers.
+        #
+        # I think it's actually okay always to use the URLs from the file, but
+        # we'll need to get the header values from the database, so we'll just
+        # need to query for whatever URLs before we actually fetch.
+        response = httpx.get(feed.url, follow_redirects=True)
+        if response.status_code == httpx.codes.OK:
+            etag = response.headers.get("etag")
+            last_modified = response.headers.get("last-modified")
+            body = Feed.from_xml(response.text)
+            feed.update(etag=etag, last_modified=last_modified, feed=body)
+        else:
+            logger.error(
+                "failed to retrieve %s with %s", feed.url, response.status_code
+            )
+
+    return feeds
+
+
+@dataclass
+class DbFeed:
+    """
+    A feed in the database.
+
+    TODO better name. This is basically the database model for a Feed, or really
+    the primary feed type, but Feed is already taken above.
+    """
+
+    url: str
+    "The URL to fetch."
+
+    etag: str | None
+    "ETag header from the last server response, if provided."
+
+    last_modified: str | None
+    "Last-Modified header from the last server response, if provided."
+
+    feed: Feed | None
+    "The deserialized feed result, if the response was okay."
+
+    def __init__(self, url):
+        self.url = url
+        self.etag = None
+        self.last_modified = None
+        self.feed = None
+
+    def update(self, *, etag, last_modified, feed):
+        """
+        Replace the provided fields of `self` if the values are not `None`.
+        """
+        self.etag = etag or self.etag
+        self.last_modified = last_modified or self.last_modified
+        self.feed = feed or self.feed
+
+
 def main() -> None:
-    print("Hello from newsyacht!")
+    urls = load_urls("tests/fixtures/urls")
+    feeds = [DbFeed(url) for url in urls]
 
-    tree = ElementTree.parse("tests/fixtures/arch.xml")
-    feed = Feed.from_xml(tree)
+    update_feeds(feeds)
 
-    from pprint import pprint
+    # tree = ElementTree.parse("tests/fixtures/arch.xml")
+    # feed = Feed.from_xml(tree)
 
-    pprint(feed)
+    # from pprint import pprint
+
+    # pprint(feed)
