@@ -1,4 +1,5 @@
 import logging
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Self
@@ -98,29 +99,33 @@ def load_urls(path) -> list[str]:
     return [url.strip() for url in Path(path).read_text().splitlines()]
 
 
-def update_feeds(feeds: list[DbFeed]):
+def update_feeds(feeds: list[DbFeed]) -> list[Item]:
     """
-    Fetch a list of feeds and update them in place.
+    Fetch a list of feeds, update their metadata in place, and return a
+    list of items.
     """
+
+    items = []
     for feed in feeds:
-        # TODO include etag and last_modified, extracted from ETag and
-        # Last-Modified headers.
-        #
-        # I think it's actually okay always to use the URLs from the file, but
-        # we'll need to get the header values from the database, so we'll just
-        # need to query for whatever URLs before we actually fetch.
-        response = httpx.get(feed.url, follow_redirects=True)
+        headers = {}
+        if feed.etag:
+            headers["etag"] = feed.etag
+        if feed.last_modified:
+            headers["last-modified"] = feed.last_modified
+
+        response = httpx.get(feed.url, follow_redirects=True, headers=headers)
         if response.status_code == httpx.codes.OK:
             etag = response.headers.get("etag")
             last_modified = response.headers.get("last-modified")
             body = Feed.from_xml(response.text)
             feed.update(etag=etag, last_modified=last_modified, feed=body)
+            items.extend(body.items)
         else:
             logger.error(
                 "failed to retrieve %s with %s", feed.url, response.status_code
             )
 
-    return feeds
+    return items
 
 
 @dataclass
@@ -132,8 +137,17 @@ class DbFeed:
     the primary feed type, but Feed is already taken above.
     """
 
+    id: int
+    "The ID in the database."
+
     url: str
     "The URL to fetch."
+
+    title: str | None
+    "The feed title."
+
+    description: str | None
+    "The feed description."
 
     etag: str | None
     "ETag header from the last server response, if provided."
@@ -141,29 +155,60 @@ class DbFeed:
     last_modified: str | None
     "Last-Modified header from the last server response, if provided."
 
-    feed: Feed | None
-    "The deserialized feed result, if the response was okay."
-
-    def __init__(self, url):
-        self.url = url
-        self.etag = None
-        self.last_modified = None
-        self.feed = None
-
-    def update(self, *, etag, last_modified, feed):
+    def update(self, *, etag, last_modified, feed: Feed):
         """
         Replace the provided fields of `self` if the values are not `None`.
         """
+        self.title = feed.title or self.title
+        self.description = feed.description or self.description
         self.etag = etag or self.etag
         self.last_modified = last_modified or self.last_modified
-        self.feed = feed or self.feed
 
 
 def main() -> None:
     urls = load_urls("tests/fixtures/urls")
-    feeds = [DbFeed(url) for url in urls]
 
-    update_feeds(feeds)
+    conn = sqlite3.connect("cache.db")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feeds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT NOT NULL UNIQUE,
+            title TEXT,
+            description TEXT,
+            etag TEXT,
+            last_modified TEXT
+        )
+        """
+    )
+
+    with conn:
+        conn.executemany(
+            """
+            INSERT INTO feeds (url)
+            VALUES (?)
+            ON CONFLICT(url) DO NOTHING;
+            """,
+            [(u,) for u in urls],
+        )
+
+    placeholders = ",".join("?" for _ in urls)
+    cur = conn.execute(
+        f"""
+        SELECT id, url, title, description, etag, last_modified
+        FROM feeds
+        WHERE url IN ({placeholders})
+        ORDER BY url;
+        """,
+        urls,
+    )
+
+    feeds = [DbFeed(*row) for row in cur.fetchall()]
+
+    items = update_feeds(feeds)
+
+    for item in items:
+        print(item.title)
 
     # tree = ElementTree.parse("tests/fixtures/arch.xml")
     # feed = Feed.from_xml(tree)
