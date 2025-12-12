@@ -67,10 +67,6 @@ class Feed:
 
         channel = channels[0]
 
-        title = then(channel.find("title"), lambda t: t.text)
-        link = then(channel.find("link"), lambda t: t.text)
-        description = then(channel.find("description"), lambda t: t.text)
-
         items = []
         for item in channel.iter("item"):
             title = then(item.find("title"), lambda t: t.text)
@@ -87,6 +83,10 @@ class Feed:
                     date=date,
                 )
             )
+
+        title = then(channel.find("title"), lambda t: t.text)
+        link = then(channel.find("link"), lambda t: t.text)
+        description = then(channel.find("description"), lambda t: t.text)
 
         return cls(title=title, link=link, description=description, items=items)
 
