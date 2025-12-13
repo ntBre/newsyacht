@@ -3,13 +3,15 @@ import sqlite3
 from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
-from typing import Callable, Self
+from typing import Callable, NewType, Self
 from xml.etree import ElementTree
 
 import httpx
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
+
+FeedId = NewType("FeedId", int)
 
 
 def then[T, U](x: T | None, f: Callable[[T], U | None]) -> U | None:
@@ -34,7 +36,47 @@ class Item:
     link: str | None
     author: str | None
     date: str | None
-    guid: str | None
+    guid: str
+
+
+@dataclass
+class DbItem:
+    id: int
+    "The ID in the database."
+
+    feed_id: FeedId
+    "The database ID of the parent feed."
+
+    is_read: bool
+    "Whether the item has been marked as read."
+
+    score: float
+    "Ranking score, currently unused."
+
+    inner: Item
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row) -> Self:
+        return cls(
+            id=row["id"],
+            feed_id=row["feed_id"],
+            is_read=row["is_read"],
+            score=row["score"],
+            inner=Item(
+                title=row["title"],
+                content=row["content"],
+                link=row["link"],
+                author=row["author"],
+                date=row["date"],
+                guid=row["guid"],
+            ),
+        )
+
+
+type XmlTree = (
+    ElementTree.ElementTree[ElementTree.Element[str] | None]
+    | ElementTree.ElementTree[ElementTree.Element[str]]
+)
 
 
 @dataclass
@@ -57,7 +99,7 @@ class Feed:
         return cls._from_xml(tree)
 
     @classmethod
-    def _from_xml(cls, tree: ElementTree.ElementTree[ElementTree.Element[str]]) -> Self:
+    def _from_xml(cls, tree: XmlTree) -> Self:
         """
         Deserialize a `Feed` from an XML document.
         """
@@ -86,11 +128,12 @@ class Feed:
                 )
             )
 
-        title = then(channel.find("title"), lambda t: t.text)
-        link = then(channel.find("link"), lambda t: t.text)
-        description = then(channel.find("description"), lambda t: t.text)
-
-        return cls(title=title, link=link, description=description, items=items)
+        return cls(
+            title=get(channel, "title"),
+            link=get(channel, "link"),
+            description=get(channel, "description"),
+            items=items,
+        )
 
 
 def load_urls(path) -> list[str]:
@@ -100,7 +143,7 @@ def load_urls(path) -> list[str]:
     return [url.strip() for url in Path(path).read_text().splitlines()]
 
 
-def update_feeds(feeds: list[DbFeed]) -> list[Item]:
+def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
     """
     Fetch a list of feeds, update their metadata in place, and return a
     list of items.
@@ -120,7 +163,7 @@ def update_feeds(feeds: list[DbFeed]) -> list[Item]:
             last_modified = response.headers.get("last-modified")
             body = Feed.from_xml(response.text)
             feed.update(etag=etag, last_modified=last_modified, feed=body)
-            items.extend(body.items)
+            items.extend((feed.id, item) for item in body.items)
         else:
             logger.error(
                 "failed to retrieve %s with %s", feed.url, response.status_code
@@ -170,6 +213,8 @@ def main() -> None:
     urls = load_urls("tests/fixtures/urls")
 
     conn = sqlite3.connect("cache.db")
+    conn.row_factory = sqlite3.Row
+
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS feeds (
@@ -179,6 +224,24 @@ def main() -> None:
             description TEXT,
             etag TEXT,
             last_modified TEXT
+        )
+        """
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS items (
+            id            INTEGER PRIMARY KEY,
+            feed_id       INTEGER NOT NULL REFERENCES feeds(id),
+            is_read       INTEGER NOT NULL DEFAULT 0,
+            score         REAL NOT NULL DEFAULT 0.0,
+            title         TEXT,
+            content       TEXT,
+            link          TEXT,
+            author        TEXT,
+            date          TEXT,
+            guid          TEXT NOT NULL,
+            UNIQUE(feed_id, guid)
         )
         """
     )
@@ -208,12 +271,50 @@ def main() -> None:
 
     items = update_feeds(feeds)
 
-    for item in items:
-        print(item.title)
+    with conn:
+        conn.executemany(
+            """
+            UPDATE feeds
+            SET etag = ?, last_modified = ?
+            WHERE id = ?
+            """,
+            [(feed.etag, feed.last_modified, feed.id) for feed in feeds],
+        )
 
-    # tree = ElementTree.parse("tests/fixtures/arch.xml")
-    # feed = Feed.from_xml(tree)
+    with conn:
+        conn.executemany(
+            """
+            INSERT INTO items (feed_id, guid, title, content, link, author, date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(feed_id, guid) DO UPDATE SET
+                title = excluded.title,
+                content = excluded.content,
+                link = excluded.link,
+                author = excluded.author,
+                date = excluded.date
+            """,
+            [
+                (
+                    feed_id,
+                    item.guid,
+                    item.title,
+                    item.content,
+                    item.link,
+                    item.author,
+                    item.date,
+                )
+                for feed_id, item in items
+            ],
+        )
 
-    # from pprint import pprint
+    cur = conn.execute(
+        """
+        SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+        FROM items
+        """
+    )
 
-    # pprint(feed)
+    posts = [DbItem.from_row(row) for row in cur.fetchall()]
+
+    for post in posts:
+        print(post.inner.title)
