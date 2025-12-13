@@ -371,7 +371,7 @@ class App:
                     ],
                 )
 
-    def list(self, _args):
+    def list_(self, _args):
         with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
             Db.setup_connection(conn)
             cur = conn.execute(
@@ -416,7 +416,7 @@ def main() -> None:
     update.set_defaults(func=app.update)
 
     list_ = subparsers.add_parser("list", description="List available posts")
-    list_.set_defaults(func=app.list)
+    list_.set_defaults(func=app.list_)
 
     args = parser.parse_args()
     args.func(args)
