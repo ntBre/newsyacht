@@ -132,7 +132,11 @@ class Feed:
         """
 
         root = tree.getroot()
-        assert root is not None and root.tag == "rss", "Expected root tag to be <rss>"
+
+        if root is None:
+            raise ValueError("Feed missing root tag")
+        if root.tag != "rss":
+            raise ValueError("Expected root tag to be <rss>")
 
         channels: list[Element[str]] = list(root.iter("channel"))
         assert len(channels) == 1, "Expected a single nested <channel>"
@@ -192,7 +196,11 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
         if response.status_code == httpx.codes.OK:
             etag = response.headers.get("etag")
             last_modified = response.headers.get("last-modified")
-            body = Feed.from_xml(response.text)
+            try:
+                body = Feed.from_xml(response.text)
+            except ValueError as e:
+                logging.error("Failed to parse %s", feed.url)
+                raise e
             feed.update(etag=etag, last_modified=last_modified, feed=body)
             items.extend((feed.id, item) for item in body.items)
         else:
