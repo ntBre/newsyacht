@@ -1,5 +1,5 @@
-run:
-	uv run newsyacht
+run *args:
+	uv run -- newsyacht {{args}}
 
 test:
 	uv run -- pytest tests
