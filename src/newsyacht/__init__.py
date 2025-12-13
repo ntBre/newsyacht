@@ -167,7 +167,11 @@ def load_urls(path) -> list[str]:
     """
     Load a sequence of URLs from `path`, one per line.
     """
-    return [url.strip() for url in Path(path).read_text().splitlines()]
+    return [
+        url.strip()
+        for url in Path(path).read_text().splitlines()
+        if not url.startswith("#")
+    ]
 
 
 def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
