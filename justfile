@@ -4,6 +4,9 @@ run:
 test:
 	uv run -- pytest tests
 
+accept:
+	uv run -- pytest tests --snapshot-update
+
 check:
 	uv run -- ruff check
 	uv run -- ruff format --check
