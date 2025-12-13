@@ -114,6 +114,11 @@ class DbItem:
             ),
         )
 
+    def __getattr__(self, attr):
+        if hasattr(self.inner, attr):
+            return getattr(self.inner, attr)
+        return getattr(self, attr)
+
 
 type XmlTree = (
     ElementTree.ElementTree[ElementTree.Element[str] | None]
@@ -265,7 +270,7 @@ class DbFeed:
 
 class Db:
     @staticmethod
-    def setup_connection(conn):
+    def setup_connection(conn: sqlite3.Connection):
         conn.row_factory = sqlite3.Row
 
         conn.execute(
@@ -298,6 +303,19 @@ class Db:
             )
             """
         )
+
+    @staticmethod
+    def get_posts(conn: sqlite3.Connection) -> list[DbItem]:
+        cur = conn.execute(
+            """
+                SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+                FROM items
+                """
+        )
+
+        posts = [DbItem.from_row(row) for row in cur.fetchall()]
+
+        return posts
 
 
 @dataclass
@@ -386,14 +404,8 @@ class App:
     def list_(self, _args):
         with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
             Db.setup_connection(conn)
-            cur = conn.execute(
-                """
-                SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
-                FROM items
-                """
-            )
 
-            posts = [DbItem.from_row(row) for row in cur.fetchall()]
+            posts = Db.get_posts(conn)
 
             grouped_posts = defaultdict(list)
             for post in posts:
@@ -412,6 +424,16 @@ class App:
                 for post in posts:
                     print(f"\t{post}")
 
+    def serve(self, _args):
+        from newsyacht.web import App
+
+        with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
+            Db.setup_connection(conn)
+            posts = Db.get_posts(conn)
+
+            app = App(posts)
+            app.run("0.0.0.0", use_reloader=False)
+
 
 def main() -> None:
     home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
@@ -429,6 +451,9 @@ def main() -> None:
 
     list_ = subparsers.add_parser("list", description="List available posts")
     list_.set_defaults(func=app.list_)
+
+    serve = subparsers.add_parser("serve", description="Serve the web interface")
+    serve.set_defaults(func=app.serve)
 
     args = parser.parse_args()
     args.func(args)

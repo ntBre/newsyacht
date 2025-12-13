@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>newsyacht</title>
+	<h1>Hello world</h1>
+	<ul>
+	  {% for post in posts %}
+	  <li>{{post.title}}</li>
+	  {% endfor %}
+	</ul>
+  </head>
+  <body>
+	<div id="app"></div>
+  </body>
+</html>
