@@ -1,6 +1,7 @@
 import logging
 import sqlite3
 from dataclasses import dataclass
+from operator import attrgetter
 from pathlib import Path
 from typing import Callable, Self
 from xml.etree import ElementTree
@@ -33,6 +34,7 @@ class Item:
     link: str | None
     author: str | None
     date: str | None
+    guid: str | None
 
 
 @dataclass
@@ -68,20 +70,19 @@ class Feed:
 
         channel = channels[0]
 
+        def get(item, field):
+            return then(item.find(field), attrgetter("text"))
+
         items = []
         for item in channel.iter("item"):
-            title = then(item.find("title"), lambda t: t.text)
-            link = then(item.find("link"), lambda t: t.text)
-            description = then(item.find("description"), lambda t: t.text)
-            author = then(item.find("dc:creator"), lambda t: t.text)
-            date = then(item.find("pubDate"), lambda t: t.text)
             items.append(
                 Item(
-                    title=title,
-                    link=link,
-                    description=description,
-                    author=author,
-                    date=date,
+                    title=get(item, "title"),
+                    link=get(item, "link"),
+                    description=get(item, "description"),
+                    author=get(item, "dc:creator"),
+                    date=get(item, "pubDate"),
+                    guid=get(item, "guid"),
                 )
             )
 
