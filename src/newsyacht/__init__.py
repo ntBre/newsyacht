@@ -30,7 +30,7 @@ class Item:
     """
 
     title: str | None
-    description: str | None
+    content: str | None
     link: str | None
     author: str | None
     date: str | None
@@ -79,7 +79,7 @@ class Feed:
                 Item(
                     title=get(item, "title"),
                     link=get(item, "link"),
-                    description=get(item, "description"),
+                    content=get(item, "description"),
                     author=get(item, "dc:creator"),
                     date=get(item, "pubDate"),
                     guid=get(item, "guid"),
