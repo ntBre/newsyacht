@@ -2,6 +2,7 @@ import logging
 import sqlite3
 from dataclasses import dataclass, field
 from hashlib import sha256
+from importlib.metadata import version
 from operator import attrgetter
 from pathlib import Path
 from typing import Callable, NewType, Self
@@ -176,7 +177,7 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
 
     items = []
     for feed in feeds:
-        headers = {}
+        headers = {"user-agent": f"newsyacht/{version('newsyacht')}"}
         if feed.etag:
             headers["etag"] = feed.etag
         if feed.last_modified:
