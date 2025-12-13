@@ -5,6 +5,8 @@ import sqlite3
 from collections import defaultdict
 from contextlib import closing
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from hashlib import sha256
 from importlib.metadata import version
 from operator import attrgetter
@@ -42,7 +44,10 @@ class Item:
     content: str | None
     link: str | None
     author: str | None
-    date: str | None
+
+    date: datetime | None = field(init=False)
+
+    _raw_date: str | None = field(repr=False)
 
     _raw_guid: str | None = field(repr=False)
     "Input representation of the GUID, which could be missing."
@@ -67,6 +72,13 @@ class Item:
             self.guid = m.hexdigest()
         else:
             raise ValueError("Item doesn't include a GUID, link, or contents")
+
+        self.date = parsedate_to_datetime(self._raw_date)
+
+    def date_str(self):
+        if self.date is None:
+            return None
+        return self.date.astimezone(timezone.utc).isoformat()
 
 
 @dataclass
@@ -97,7 +109,7 @@ class DbItem:
                 content=row["content"],
                 link=row["link"],
                 author=row["author"],
-                date=row["date"],
+                _raw_date=row["date"],
                 _raw_guid=row["guid"],
             ),
         )
@@ -157,7 +169,7 @@ class Feed:
                     link=get(item, "link"),
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
-                    date=get(item, "pubDate"),
+                    _raw_date=get(item, "pubDate"),
                     _raw_guid=get(item, "guid"),
                 )
             )
@@ -365,7 +377,7 @@ class App:
                             item.content,
                             item.link,
                             item.author,
-                            item.date,
+                            item.date_str(),
                         )
                         for feed_id, item in items
                     ],
