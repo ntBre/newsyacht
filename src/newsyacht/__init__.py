@@ -293,7 +293,7 @@ def main() -> None:
         urls,
     )
 
-    feeds = [DbFeed(*row) for row in cur.fetchall()]
+    feeds = [DbFeed(**row) for row in cur.fetchall()]
 
     items = update_feeds(feeds)
 
