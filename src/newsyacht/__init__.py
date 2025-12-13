@@ -1,10 +1,13 @@
 import logging
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from hashlib import sha256
+from importlib.metadata import version
 from operator import attrgetter
 from pathlib import Path
 from typing import Callable, NewType, Self
 from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 
 import httpx
 
@@ -36,7 +39,30 @@ class Item:
     link: str | None
     author: str | None
     date: str | None
-    guid: str
+
+    _raw_guid: str | None = field(repr=False)
+    "Input representation of the GUID, which could be missing."
+
+    guid: str = field(init=False)
+    "Final represenation of the GUID, which must be present."
+
+    def __post_init__(self):
+        """
+        Try to find a fallback field for the GUID, if it's missing.
+
+        Raises ValueError if no reasonable fallback can be found.
+        """
+
+        if self._raw_guid:
+            self.guid = self._raw_guid
+        elif self.link:
+            self.guid = self.link
+        elif self.content:
+            m = sha256(usedforsecurity=False)
+            m.update(self.content.encode())
+            self.guid = m.hexdigest()
+        else:
+            raise ValueError("Item doesn't include a GUID, link, or contents")
 
 
 @dataclass
@@ -68,7 +94,7 @@ class DbItem:
                 link=row["link"],
                 author=row["author"],
                 date=row["date"],
-                guid=row["guid"],
+                _raw_guid=row["guid"],
             ),
         )
 
@@ -107,12 +133,12 @@ class Feed:
         root = tree.getroot()
         assert root is not None and root.tag == "rss", "Expected root tag to be <rss>"
 
-        channels = list(root.iter("channel"))
+        channels: list[Element[str]] = list(root.iter("channel"))
         assert len(channels) == 1, "Expected a single nested <channel>"
 
         channel = channels[0]
 
-        def get(item, field):
+        def get(item: Element[str], field: str) -> str | None:
             return then(item.find(field), attrgetter("text"))
 
         items = []
@@ -124,7 +150,7 @@ class Feed:
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
                     date=get(item, "pubDate"),
-                    guid=get(item, "guid"),
+                    _raw_guid=get(item, "guid"),
                 )
             )
 
@@ -151,7 +177,7 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
 
     items = []
     for feed in feeds:
-        headers = {}
+        headers = {"user-agent": f"newsyacht/{version('newsyacht')}"}
         if feed.etag:
             headers["etag"] = feed.etag
         if feed.last_modified:

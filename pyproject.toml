@@ -7,7 +7,9 @@ authors = [
     { name = "Brent Westbrook", email = "brentrwestbrook@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.1",
+]
 
 [project.scripts]
 newsyacht = "newsyacht:main"
@@ -18,7 +20,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
     "pytest>=9.0.2",
     "ruff>=0.14.8",
     "syrupy>=5.0.0",
