@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass, field
 from hashlib import sha256
 from importlib.metadata import version
@@ -238,109 +239,109 @@ class DbFeed:
 def main() -> None:
     urls = load_urls("tests/fixtures/urls")
 
-    conn = sqlite3.connect("cache.db")
-    conn.row_factory = sqlite3.Row
+    with closing(sqlite3.connect("cache.db")) as conn:
+        conn.row_factory = sqlite3.Row
 
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS feeds (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            url TEXT NOT NULL UNIQUE,
-            title TEXT,
-            description TEXT,
-            etag TEXT,
-            last_modified TEXT
-        )
-        """
-    )
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS items (
-            id            INTEGER PRIMARY KEY,
-            feed_id       INTEGER NOT NULL REFERENCES feeds(id),
-            is_read       INTEGER NOT NULL DEFAULT 0,
-            score         REAL NOT NULL DEFAULT 0.0,
-            title         TEXT,
-            content       TEXT,
-            link          TEXT,
-            author        TEXT,
-            date          TEXT,
-            guid          TEXT NOT NULL,
-            UNIQUE(feed_id, guid)
-        )
-        """
-    )
-
-    with conn:
-        conn.executemany(
+        conn.execute(
             """
-            INSERT INTO feeds (url)
-            VALUES (?)
-            ON CONFLICT(url) DO NOTHING;
-            """,
-            [(u,) for u in urls],
-        )
-
-    placeholders = ",".join("?" for _ in urls)
-    cur = conn.execute(
-        f"""
-        SELECT id, url, title, description, etag, last_modified
-        FROM feeds
-        WHERE url IN ({placeholders})
-        ORDER BY url;
-        """,
-        urls,
-    )
-
-    feeds = [DbFeed(**row) for row in cur.fetchall()]
-
-    items = update_feeds(feeds)
-
-    with conn:
-        conn.executemany(
+            CREATE TABLE IF NOT EXISTS feeds (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                url TEXT NOT NULL UNIQUE,
+                title TEXT,
+                description TEXT,
+                etag TEXT,
+                last_modified TEXT
+            )
             """
-            UPDATE feeds
-            SET etag = ?, last_modified = ?
-            WHERE id = ?
-            """,
-            [(feed.etag, feed.last_modified, feed.id) for feed in feeds],
         )
 
-    with conn:
-        conn.executemany(
+        conn.execute(
             """
-            INSERT INTO items (feed_id, guid, title, content, link, author, date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(feed_id, guid) DO UPDATE SET
-                title = excluded.title,
-                content = excluded.content,
-                link = excluded.link,
-                author = excluded.author,
-                date = excluded.date
-            """,
-            [
-                (
-                    feed_id,
-                    item.guid,
-                    item.title,
-                    item.content,
-                    item.link,
-                    item.author,
-                    item.date,
-                )
-                for feed_id, item in items
-            ],
+            CREATE TABLE IF NOT EXISTS items (
+                id            INTEGER PRIMARY KEY,
+                feed_id       INTEGER NOT NULL REFERENCES feeds(id),
+                is_read       INTEGER NOT NULL DEFAULT 0,
+                score         REAL NOT NULL DEFAULT 0.0,
+                title         TEXT,
+                content       TEXT,
+                link          TEXT,
+                author        TEXT,
+                date          TEXT,
+                guid          TEXT NOT NULL,
+                UNIQUE(feed_id, guid)
+            )
+            """
         )
 
-    cur = conn.execute(
-        """
-        SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
-        FROM items
-        """
-    )
+        with conn:
+            conn.executemany(
+                """
+                INSERT INTO feeds (url)
+                VALUES (?)
+                ON CONFLICT(url) DO NOTHING;
+                """,
+                [(u,) for u in urls],
+            )
 
-    posts = [DbItem.from_row(row) for row in cur.fetchall()]
+        placeholders = ",".join("?" for _ in urls)
+        cur = conn.execute(
+            f"""
+            SELECT id, url, title, description, etag, last_modified
+            FROM feeds
+            WHERE url IN ({placeholders})
+            ORDER BY url;
+            """,
+            urls,
+        )
 
-    for post in posts:
-        print(post.inner.title)
+        feeds = [DbFeed(**row) for row in cur.fetchall()]
+
+        items = update_feeds(feeds)
+
+        with conn:
+            conn.executemany(
+                """
+                UPDATE feeds
+                SET etag = ?, last_modified = ?
+                WHERE id = ?
+                """,
+                [(feed.etag, feed.last_modified, feed.id) for feed in feeds],
+            )
+
+        with conn:
+            conn.executemany(
+                """
+                INSERT INTO items (feed_id, guid, title, content, link, author, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(feed_id, guid) DO UPDATE SET
+                    title = excluded.title,
+                    content = excluded.content,
+                    link = excluded.link,
+                    author = excluded.author,
+                    date = excluded.date
+                """,
+                [
+                    (
+                        feed_id,
+                        item.guid,
+                        item.title,
+                        item.content,
+                        item.link,
+                        item.author,
+                        item.date,
+                    )
+                    for feed_id, item in items
+                ],
+            )
+
+        cur = conn.execute(
+            """
+            SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+            FROM items
+            """
+        )
+
+        posts = [DbItem.from_row(row) for row in cur.fetchall()]
+
+        for post in posts:
+            print(post.inner.title)
