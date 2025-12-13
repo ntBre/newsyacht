@@ -1,5 +1,8 @@
+import argparse
 import logging
+import os
 import sqlite3
+from collections import defaultdict
 from contextlib import closing
 from dataclasses import dataclass, field
 from hashlib import sha256
@@ -248,10 +251,9 @@ class DbFeed:
         self.last_modified = last_modified or self.last_modified
 
 
-def main() -> None:
-    urls = load_urls("tests/fixtures/urls")
-
-    with closing(sqlite3.connect("cache.db")) as conn:
+class Db:
+    @staticmethod
+    def setup_connection(conn):
         conn.row_factory = sqlite3.Row
 
         conn.execute(
@@ -285,75 +287,136 @@ def main() -> None:
             """
         )
 
-        with conn:
-            conn.executemany(
-                """
-                INSERT INTO feeds (url)
-                VALUES (?)
-                ON CONFLICT(url) DO NOTHING;
+
+@dataclass
+class App:
+    config_dir: Path
+
+    def load_urls(self) -> list[str]:
+        return load_urls(self.config_dir / "urls")
+
+    def update(self, _args):
+        with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
+            Db.setup_connection(conn)
+
+            urls = self.load_urls()
+
+            with conn:
+                conn.executemany(
+                    """
+                    INSERT INTO feeds (url)
+                    VALUES (?)
+                    ON CONFLICT(url) DO NOTHING;
+                    """,
+                    [(url,) for url in urls],
+                )
+
+            placeholders = ",".join("?" for _ in urls)
+            cur = conn.execute(
+                f"""
+                SELECT id, url, title, description, etag, last_modified
+                FROM feeds
+                WHERE url IN ({placeholders})
+                ORDER BY url;
                 """,
-                [(u,) for u in urls],
+                urls,
             )
 
-        placeholders = ",".join("?" for _ in urls)
-        cur = conn.execute(
-            f"""
-            SELECT id, url, title, description, etag, last_modified
-            FROM feeds
-            WHERE url IN ({placeholders})
-            ORDER BY url;
-            """,
-            urls,
-        )
+            feeds = [DbFeed(**row) for row in cur.fetchall()]
 
-        feeds = [DbFeed(**row) for row in cur.fetchall()]
+            items = update_feeds(feeds)
 
-        items = update_feeds(feeds)
+            with conn:
+                conn.executemany(
+                    """
+                    UPDATE feeds
+                    SET etag = ?, last_modified = ?, title = ?, description = ?
+                    WHERE id = ?
+                    """,
+                    [
+                        (
+                            feed.etag,
+                            feed.last_modified,
+                            feed.title,
+                            feed.description,
+                            feed.id,
+                        )
+                        for feed in feeds
+                    ],
+                )
 
-        with conn:
-            conn.executemany(
+            with conn:
+                conn.executemany(
+                    """
+                    INSERT INTO items (feed_id, guid, title, content, link, author, date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(feed_id, guid) DO UPDATE SET
+                        title = excluded.title,
+                        content = excluded.content,
+                        link = excluded.link,
+                        author = excluded.author,
+                        date = excluded.date
+                    """,
+                    [
+                        (
+                            feed_id,
+                            item.guid,
+                            item.title,
+                            item.content,
+                            item.link,
+                            item.author,
+                            item.date,
+                        )
+                        for feed_id, item in items
+                    ],
+                )
+
+    def list(self, _args):
+        with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
+            Db.setup_connection(conn)
+            cur = conn.execute(
                 """
-                UPDATE feeds
-                SET etag = ?, last_modified = ?
-                WHERE id = ?
-                """,
-                [(feed.etag, feed.last_modified, feed.id) for feed in feeds],
+                SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+                FROM items
+                """
             )
 
-        with conn:
-            conn.executemany(
-                """
-                INSERT INTO items (feed_id, guid, title, content, link, author, date)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(feed_id, guid) DO UPDATE SET
-                    title = excluded.title,
-                    content = excluded.content,
-                    link = excluded.link,
-                    author = excluded.author,
-                    date = excluded.date
-                """,
-                [
-                    (
-                        feed_id,
-                        item.guid,
-                        item.title,
-                        item.content,
-                        item.link,
-                        item.author,
-                        item.date,
-                    )
-                    for feed_id, item in items
-                ],
-            )
+            posts = [DbItem.from_row(row) for row in cur.fetchall()]
 
-        cur = conn.execute(
-            """
-            SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
-            FROM items
-            """
-        )
+            grouped_posts = defaultdict(list)
+            for post in posts:
+                grouped_posts[post.feed_id].append(post.inner.title)
 
-        posts = [DbItem.from_row(row) for row in cur.fetchall()]
+            for feed_id, posts in grouped_posts.items():
+                cur = conn.execute(
+                    """
+                    SELECT title from feeds
+                    WHERE id = ?
+                    """,
+                    (feed_id,),
+                )
+                feed_name = cur.fetchone()["title"]
+                print(feed_name)
+                for post in posts:
+                    print(f"\t{post}")
 
-        for post in posts:
-            print(post.inner.title)
+
+def main() -> None:
+    home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    config_dir = home / "newsyacht"
+
+    app = App(config_dir)
+
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(required=True)
+
+    update = subparsers.add_parser(
+        "update", description="Update the newsyacht database"
+    )
+    update.set_defaults(func=app.update)
+
+    list_ = subparsers.add_parser("list", description="List available posts")
+    list_.set_defaults(func=app.list)
+
+    args = parser.parse_args()
+    args.func(args)
