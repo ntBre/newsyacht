@@ -1,10 +1,14 @@
+from pathlib import Path
 from xml.etree import ElementTree
 
+import pytest
 from newsyacht import Feed, load_urls
 
 
-def test_feed_from_xml(snapshot):
-    tree = ElementTree.parse("tests/fixtures/arch.xml")
+@pytest.mark.parametrize("path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml"])
+def test_feed_from_xml(path, snapshot):
+    base = Path("tests/fixtures")
+    tree = ElementTree.parse(base / path)
     assert Feed._from_xml(tree) == snapshot
 
 

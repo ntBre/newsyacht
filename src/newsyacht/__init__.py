@@ -43,6 +43,8 @@ class Item:
     content: str | None
     link: str | None
     author: str | None
+    comments: str | None
+    "An optional link to a comments page"
 
     date: datetime | None = field(init=False)
 
@@ -72,7 +74,8 @@ class Item:
         else:
             raise ValueError("Item doesn't include a GUID, link, or contents")
 
-        self.date = parsedate_to_datetime(self._raw_date)
+        if self._raw_date:
+            self.date = datetime.fromisoformat(self._raw_date)
 
     def date_str(self):
         if self.date is None:
@@ -108,6 +111,7 @@ class DbItem:
                 content=row["content"],
                 link=row["link"],
                 author=row["author"],
+                comments=row["comments"],
                 _raw_date=row["date"],
                 _raw_guid=row["guid"],
             ),
@@ -154,9 +158,16 @@ class Feed:
 
         if root is None:
             raise ValueError("Feed missing root tag")
-        if root.tag != "rss":
-            raise ValueError("Expected root tag to be <rss>")
+        if root.tag == "rss":
+            return cls._from_rss(root)
+        elif root.tag.endswith("feed"):
+            return cls._from_atom(root)
+        else:
+            msg = f"Unexpected root tag: {root.tag}"
+            raise ValueError(msg)
 
+    @classmethod
+    def _from_rss(cls, root: Element[str]) -> Self:
         channels: list[Element[str]] = list(root.iter("channel"))
         assert len(channels) == 1, "Expected a single nested <channel>"
 
@@ -167,13 +178,18 @@ class Feed:
 
         items = []
         for item in channel.iter("item"):
+            pub_date = get(item, "pubDate")
+            rfc_date = then(pub_date, parsedate_to_datetime)
+            if rfc_date:
+                iso_date = rfc_date.astimezone(timezone.utc).isoformat()
             items.append(
                 Item(
                     title=get(item, "title"),
                     link=get(item, "link"),
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
-                    _raw_date=get(item, "pubDate"),
+                    comments=get(item, "comments"),
+                    _raw_date=iso_date,
                     _raw_guid=get(item, "guid"),
                 )
             )
@@ -182,6 +198,56 @@ class Feed:
             title=get(channel, "title"),
             link=get(channel, "link"),
             description=get(channel, "description"),
+            items=items,
+        )
+
+    @classmethod
+    def _from_atom(cls, root: Element[str]) -> Self:
+        def get(element: Element[str], field: str) -> Element[str] | None:
+            for item in element:
+                if item.tag.endswith(field):
+                    return item
+
+        def find(
+            element: Element[str], target: str, attr: str | None = None
+        ) -> str | None:
+            item = get(element, target)
+            if item is not None:
+                if attr is None:
+                    return item.text
+                else:
+                    return item.attrib[attr]
+
+        def author(element: Element[str]):
+            author = get(element, "author")
+            if author is None:
+                return None
+
+            name = get(author, "name")
+            if name is None:
+                return None
+
+            return name.text
+
+        items = []
+        for item in root:
+            if item.tag.endswith("entry"):
+                items.append(
+                    Item(
+                        title=find(item, "title"),
+                        link=find(item, "link", "href"),
+                        content=find(item, "content"),
+                        author=author(item),
+                        comments=find(item, "comments"),
+                        _raw_date=find(item, "published") or find(item, "updated"),
+                        _raw_guid=find(item, "id"),
+                    )
+                )
+
+        return cls(
+            title=find(root, "title"),
+            link=find(root, "link", "href"),
+            description=find(root, "content"),
             items=items,
         )
 
@@ -308,6 +374,7 @@ class Db:
                 content       TEXT,
                 link          TEXT,
                 author        TEXT,
+                comments      TEXT,
                 date          TEXT,
                 guid          TEXT NOT NULL,
                 UNIQUE(feed_id, guid)
@@ -318,7 +385,7 @@ class Db:
     def get_posts(self) -> list[DbItem]:
         cur = self.conn.execute(
             """
-            SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+            SELECT id, feed_id, is_read, score, title, content, link, author, comments, date, guid
             FROM items
             """
         )
