@@ -4,10 +4,16 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>newsyacht</title>
-	<h1>Hello world</h1>
+	<h2>Unread</h2>
 	<ul>
-	  {% for post in posts %}
-	  <li>{{post.title}}</li>
+	  {% for post in unread_posts %}
+	  <li><a href="/read/{{post.id}}">{{post.title}}</a> ({{post.date.strftime("%Y-%m-%d")}})</li>
+	  {% endfor %}
+	</ul>
+	<h2>Read</h2>
+	<ul>
+	  {% for post in read_posts %}
+	  <li><a href="/read/{{post.id}}">{{post.title}}</a> ({{post.date.strftime("%Y-%m-%d")}})</li>
 	  {% endfor %}
 	</ul>
   </head>
