@@ -5,7 +5,7 @@ import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from email.utils import format_datetime, parsedate_to_datetime
+from email.utils import parsedate_to_datetime
 from hashlib import sha256
 from importlib.metadata import version
 from operator import attrgetter
@@ -199,7 +199,6 @@ class Feed:
 
     @classmethod
     def _from_atom(cls, root: Element[str]) -> Self:
-
         def get(element: Element[str], field: str) -> Element[str] | None:
             for item in element:
                 if item.tag.endswith(field):
@@ -235,7 +234,7 @@ class Feed:
                         link=find(item, "link", "href"),
                         content=find(item, "content"),
                         author=author(item),
-                        _raw_date=find(item, "published"),
+                        _raw_date=find(item, "published") or find(item, "updated"),
                         _raw_guid=find(item, "id"),
                     )
                 )
