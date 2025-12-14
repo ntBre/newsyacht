@@ -7,6 +7,9 @@ def test_feed_from_xml(snapshot):
     tree = ElementTree.parse("tests/fixtures/arch.xml")
     assert Feed._from_xml(tree) == snapshot
 
+def test_feed_from_atom(snapshot):
+    tree = ElementTree.parse("tests/fixtures/atom.xml")
+    assert Feed._from_xml(tree) == snapshot
 
 def test_load_urls(snapshot):
     assert load_urls("tests/fixtures/urls") == snapshot

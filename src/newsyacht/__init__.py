@@ -5,7 +5,7 @@ import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
+from email.utils import format_datetime, parsedate_to_datetime
 from hashlib import sha256
 from importlib.metadata import version
 from operator import attrgetter
@@ -154,9 +154,16 @@ class Feed:
 
         if root is None:
             raise ValueError("Feed missing root tag")
-        if root.tag != "rss":
-            raise ValueError("Expected root tag to be <rss>")
+        if root.tag == "rss":
+            return cls._from_rss(root)
+        elif root.tag.endswith("feed"):
+            return cls._from_atom(root)
+        else:
+            msg = f"Unexpected root tag: {root.tag}"
+            raise ValueError(msg)
 
+    @classmethod
+    def _from_rss(cls, root: Element[str]) -> Self:
         channels: list[Element[str]] = list(root.iter("channel"))
         assert len(channels) == 1, "Expected a single nested <channel>"
 
@@ -182,6 +189,60 @@ class Feed:
             title=get(channel, "title"),
             link=get(channel, "link"),
             description=get(channel, "description"),
+            items=items,
+        )
+
+    @classmethod
+    def _from_atom(cls, root: Element[str]) -> Self:
+
+        def get(element: Element[str], field: str) -> Element[str] | None:
+            for item in element:
+                if item.tag.endswith(field):
+                    return item
+
+        def find(
+            element: Element[str], target: str, attr: str | None = None
+        ) -> str | None:
+            item = get(element, target)
+            if item is not None:
+                if attr is None:
+                    return item.text
+                else:
+                    return item.attrib[attr]
+
+        def author(element: Element[str]):
+            author = get(element, "author")
+            if author is None:
+                return None
+
+            name = get(author, "name")
+            if name is None:
+                return None
+
+            return name.text
+
+        items = []
+        for item in root:
+            if item.tag.endswith("entry"):
+                published = find(item, "published")
+                if published:
+                    iso = datetime.fromisoformat(published.replace("Z", "+00:00"))
+                    published = format_datetime(iso)
+                items.append(
+                    Item(
+                        title=find(item, "title"),
+                        link=find(item, "link", "href"),
+                        content=find(item, "content"),
+                        author=author(item),
+                        _raw_date=published,
+                        _raw_guid=find(item, "id"),
+                    )
+                )
+
+        return cls(
+            title=find(root, "title"),
+            link=find(root, "link", "href"),
+            description=find(root, "content"),
             items=items,
         )
 

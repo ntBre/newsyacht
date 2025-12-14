@@ -1,8 +1,8 @@
 run *args:
 	uv run -- newsyacht {{args}}
 
-test:
-	uv run -- pytest tests
+test *args:
+	uv run -- pytest tests {{args}}
 
 accept:
 	uv run -- pytest tests --snapshot-update
