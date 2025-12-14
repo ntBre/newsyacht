@@ -4,20 +4,46 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>newsyacht</title>
+	<style>
+	  body {
+		  font-size: 18px;
+		  line-height: 1.5;
+	  }
+	  .post-meta {
+		  font-size: 0.85em;
+		  color: #888;
+	  }
+	</style>
+  </head>
+  <body>
 	<h2>Unread</h2>
 	<ul>
 	  {% for post in unread_posts %}
-	  <li><a href="/read/{{post.id}}">{{post.title}}</a> ({{post.date.strftime("%Y-%m-%d")}})</li>
+	  <li class="post">
+		<div class="post-title">
+		  <a href="/read/{{ post.id }}">{{ post.title }}</a>
+		</div>
+
+		<div class="post-meta">
+          {{ post.author }} · {{ post.date.strftime("%Y-%m-%d") }}
+		  · <a href="/mark-read/{{ post.id }}">Mark Read</a>
+		</div>
+	  </li>
 	  {% endfor %}
 	</ul>
 	<h2>Read</h2>
 	<ul>
 	  {% for post in read_posts %}
-	  <li><a href="/read/{{post.id}}">{{post.title}}</a> ({{post.date.strftime("%Y-%m-%d")}})</li>
+	  <li class="post">
+		<div class="post-title">
+		  <a href="/read/{{ post.id }}">{{ post.title }}</a>
+		</div>
+
+		<div class="post-meta">
+          {{ post.author }} · {{ post.date.strftime("%Y-%m-%d") }}
+		</div>
+	  </li>
 	  {% endfor %}
 	</ul>
-  </head>
-  <body>
-	<div id="app"></div>
   </body>
 </html>
