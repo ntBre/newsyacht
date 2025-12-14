@@ -43,6 +43,8 @@ class Item:
     content: str | None
     link: str | None
     author: str | None
+    comments: str | None
+    "An optional link to a comments page"
 
     date: datetime | None = field(init=False)
 
@@ -109,6 +111,7 @@ class DbItem:
                 content=row["content"],
                 link=row["link"],
                 author=row["author"],
+                comments=row["comments"],
                 _raw_date=row["date"],
                 _raw_guid=row["guid"],
             ),
@@ -185,6 +188,7 @@ class Feed:
                     link=get(item, "link"),
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
+                    comments=get(item, "comments"),
                     _raw_date=iso_date,
                     _raw_guid=get(item, "guid"),
                 )
@@ -234,6 +238,7 @@ class Feed:
                         link=find(item, "link", "href"),
                         content=find(item, "content"),
                         author=author(item),
+                        comments=find(item, "comments"),
                         _raw_date=find(item, "published") or find(item, "updated"),
                         _raw_guid=find(item, "id"),
                     )
@@ -369,6 +374,7 @@ class Db:
                 content       TEXT,
                 link          TEXT,
                 author        TEXT,
+                comments      TEXT,
                 date          TEXT,
                 guid          TEXT NOT NULL,
                 UNIQUE(feed_id, guid)
@@ -379,7 +385,7 @@ class Db:
     def get_posts(self) -> list[DbItem]:
         cur = self.conn.execute(
             """
-            SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+            SELECT id, feed_id, is_read, score, title, content, link, author, comments, date, guid
             FROM items
             """
         )

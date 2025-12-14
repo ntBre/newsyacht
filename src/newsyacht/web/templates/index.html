@@ -32,7 +32,17 @@
 		</div>
 
 		<div class="post-meta">
-          {{ post.author }} · {{ post.date.strftime("%Y-%m-%d") }}
+          {{ post.author }}
+		  ·
+		  <time
+			datetime="{{ post.date.isoformat() }}"
+			title="{{ post.date.strftime('%Y-%m-%d %H:%M:%S %Z') }}"
+			>
+			{{ post.date.strftime('%Y-%m-%d') }}
+		  </time>
+		  {% if post.comments %}
+		  · <a href="{{post.comments}}">Comments</a>
+		  {% endif %}
 		  · <a href="/mark-read/{{ post.id }}">Mark Read</a>
 		</div>
 	  </li>

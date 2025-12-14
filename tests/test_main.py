@@ -5,7 +5,7 @@ import pytest
 from newsyacht import Feed, load_urls
 
 
-@pytest.mark.parametrize("path", ["arch.xml", "atom.xml", "releases.xml"])
+@pytest.mark.parametrize("path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml"])
 def test_feed_from_xml(path, snapshot):
     base = Path("tests/fixtures")
     tree = ElementTree.parse(base / path)
