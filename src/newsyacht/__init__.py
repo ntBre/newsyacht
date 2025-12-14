@@ -3,8 +3,9 @@ import logging
 import os
 import sqlite3
 from collections import defaultdict
-from contextlib import closing
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from hashlib import sha256
 from importlib.metadata import version
 from operator import attrgetter
@@ -42,7 +43,10 @@ class Item:
     content: str | None
     link: str | None
     author: str | None
-    date: str | None
+
+    date: datetime | None = field(init=False)
+
+    _raw_date: str | None = field(repr=False)
 
     _raw_guid: str | None = field(repr=False)
     "Input representation of the GUID, which could be missing."
@@ -67,6 +71,13 @@ class Item:
             self.guid = m.hexdigest()
         else:
             raise ValueError("Item doesn't include a GUID, link, or contents")
+
+        self.date = parsedate_to_datetime(self._raw_date)
+
+    def date_str(self):
+        if self.date is None:
+            return None
+        return self.date.astimezone(timezone.utc).isoformat()
 
 
 @dataclass
@@ -97,10 +108,15 @@ class DbItem:
                 content=row["content"],
                 link=row["link"],
                 author=row["author"],
-                date=row["date"],
+                _raw_date=row["date"],
                 _raw_guid=row["guid"],
             ),
         )
+
+    def __getattr__(self, attr):
+        if hasattr(self.inner, attr):
+            return getattr(self.inner, attr)
+        return getattr(self, attr)
 
 
 type XmlTree = (
@@ -157,7 +173,7 @@ class Feed:
                     link=get(item, "link"),
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
-                    date=get(item, "pubDate"),
+                    _raw_date=get(item, "pubDate"),
                     _raw_guid=get(item, "guid"),
                 )
             )
@@ -252,11 +268,23 @@ class DbFeed:
 
 
 class Db:
-    @staticmethod
-    def setup_connection(conn):
-        conn.row_factory = sqlite3.Row
+    path: Path
 
-        conn.execute(
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        self.conn = sqlite3.connect(self.path)
+        self._setup_connection()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.conn.close()
+
+    def _setup_connection(self):
+        self.conn.row_factory = sqlite3.Row
+
+        self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS feeds (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -269,7 +297,7 @@ class Db:
             """
         )
 
-        conn.execute(
+        self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS items (
                 id            INTEGER PRIMARY KEY,
@@ -287,6 +315,112 @@ class Db:
             """
         )
 
+    def get_posts(self) -> list[DbItem]:
+        cur = self.conn.execute(
+            """
+            SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
+            FROM items
+            """
+        )
+
+        posts = [DbItem.from_row(row) for row in cur.fetchall()]
+
+        return posts
+
+    def insert_urls(self, urls):
+        with self.conn:
+            self.conn.executemany(
+                """
+                INSERT INTO feeds (url)
+                VALUES (?)
+                ON CONFLICT(url) DO NOTHING;
+                """,
+                [(url,) for url in urls],
+            )
+
+    def get_feeds(self, urls):
+        placeholders = ",".join("?" for _ in urls)
+        cur = self.conn.execute(
+            f"""
+            SELECT id, url, title, description, etag, last_modified
+            FROM feeds
+            WHERE url IN ({placeholders})
+            ORDER BY url;
+            """,
+            urls,
+        )
+        return [DbFeed(**row) for row in cur.fetchall()]
+
+    def update_feeds(self, feeds):
+        with self.conn:
+            self.conn.executemany(
+                """
+                UPDATE feeds
+                SET etag = ?, last_modified = ?, title = ?, description = ?
+                WHERE id = ?
+                """,
+                [
+                    (
+                        feed.etag,
+                        feed.last_modified,
+                        feed.title,
+                        feed.description,
+                        feed.id,
+                    )
+                    for feed in feeds
+                ],
+            )
+
+    def insert_items(self, items):
+        with self.conn:
+            self.conn.executemany(
+                """
+                INSERT INTO items (feed_id, guid, title, content, link, author, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(feed_id, guid) DO UPDATE SET
+                    title = excluded.title,
+                    content = excluded.content,
+                    link = excluded.link,
+                    author = excluded.author,
+                    date = excluded.date
+                """,
+                [
+                    (
+                        feed_id,
+                        item.guid,
+                        item.title,
+                        item.content,
+                        item.link,
+                        item.author,
+                        item.date_str(),
+                    )
+                    for feed_id, item in items
+                ],
+            )
+
+    def get_feed_title(self, feed_id):
+        cur = self.conn.execute(
+            """
+            SELECT title from feeds
+            WHERE id = ?
+            """,
+            (feed_id,),
+        )
+        return cur.fetchone()["title"]
+
+    def set_read(self, item_id):
+        with self.conn:
+            self.conn.execute(
+                "UPDATE items SET is_read = 1 WHERE id = ?",
+                (item_id,),
+            )
+
+    def get_link(self, item_id):
+        return self.conn.execute(
+            "SELECT link FROM items WHERE id = ?",
+            (item_id,),
+        ).fetchone()[0]
+
 
 @dataclass
 class App:
@@ -296,109 +430,37 @@ class App:
         return load_urls(self.config_dir / "urls")
 
     def update(self, _args):
-        with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
-            Db.setup_connection(conn)
-
+        with Db(self.config_dir / "cache.db") as db:
             urls = self.load_urls()
+            db.insert_urls(urls)
 
-            with conn:
-                conn.executemany(
-                    """
-                    INSERT INTO feeds (url)
-                    VALUES (?)
-                    ON CONFLICT(url) DO NOTHING;
-                    """,
-                    [(url,) for url in urls],
-                )
-
-            placeholders = ",".join("?" for _ in urls)
-            cur = conn.execute(
-                f"""
-                SELECT id, url, title, description, etag, last_modified
-                FROM feeds
-                WHERE url IN ({placeholders})
-                ORDER BY url;
-                """,
-                urls,
-            )
-
-            feeds = [DbFeed(**row) for row in cur.fetchall()]
+            feeds = db.get_feeds(urls)
 
             items = update_feeds(feeds)
 
-            with conn:
-                conn.executemany(
-                    """
-                    UPDATE feeds
-                    SET etag = ?, last_modified = ?, title = ?, description = ?
-                    WHERE id = ?
-                    """,
-                    [
-                        (
-                            feed.etag,
-                            feed.last_modified,
-                            feed.title,
-                            feed.description,
-                            feed.id,
-                        )
-                        for feed in feeds
-                    ],
-                )
+            db.update_feeds(feeds)
 
-            with conn:
-                conn.executemany(
-                    """
-                    INSERT INTO items (feed_id, guid, title, content, link, author, date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(feed_id, guid) DO UPDATE SET
-                        title = excluded.title,
-                        content = excluded.content,
-                        link = excluded.link,
-                        author = excluded.author,
-                        date = excluded.date
-                    """,
-                    [
-                        (
-                            feed_id,
-                            item.guid,
-                            item.title,
-                            item.content,
-                            item.link,
-                            item.author,
-                            item.date,
-                        )
-                        for feed_id, item in items
-                    ],
-                )
+            db.insert_items(items)
 
     def list_(self, _args):
-        with closing(sqlite3.connect(self.config_dir / "cache.db")) as conn:
-            Db.setup_connection(conn)
-            cur = conn.execute(
-                """
-                SELECT id, feed_id, is_read, score, title, content, link, author, date, guid
-                FROM items
-                """
-            )
-
-            posts = [DbItem.from_row(row) for row in cur.fetchall()]
+        with Db(self.config_dir / "cache.db") as db:
+            posts = db.get_posts()
 
             grouped_posts = defaultdict(list)
             for post in posts:
                 grouped_posts[post.feed_id].append(post.inner.title)
 
             for feed_id, posts in grouped_posts.items():
-                cur = conn.execute(
-                    """
-                    SELECT title from feeds
-                    WHERE id = ?
-                    """,
-                    (feed_id,),
-                )
-                feed_name = cur.fetchone()["title"]
+                feed_name = db.get_feed_title(feed_id)
                 print(feed_name)
                 for post in posts:
                     print(f"\t{post}")
+
+    def serve(self, _args):
+        from newsyacht.web import App
+
+        app = App(self.config_dir / "cache.db")
+        app.run("0.0.0.0", use_reloader=False)
 
 
 def main() -> None:
@@ -417,6 +479,9 @@ def main() -> None:
 
     list_ = subparsers.add_parser("list", description="List available posts")
     list_.set_defaults(func=app.list_)
+
+    serve = subparsers.add_parser("serve", description="Serve the web interface")
+    serve.set_defaults(func=app.serve)
 
     args = parser.parse_args()
     args.func(args)

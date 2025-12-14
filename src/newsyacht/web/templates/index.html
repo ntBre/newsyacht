@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>newsyacht</title>
+	<h2>Unread</h2>
+	<ul>
+	  {% for post in unread_posts %}
+	  <li><a href="/read/{{post.id}}">{{post.title}}</a> ({{post.date.strftime("%Y-%m-%d")}})</li>
+	  {% endfor %}
+	</ul>
+	<h2>Read</h2>
+	<ul>
+	  {% for post in read_posts %}
+	  <li><a href="/read/{{post.id}}">{{post.title}}</a> ({{post.date.strftime("%Y-%m-%d")}})</li>
+	  {% endfor %}
+	</ul>
+  </head>
+  <body>
+	<div id="app"></div>
+  </body>
+</html>
