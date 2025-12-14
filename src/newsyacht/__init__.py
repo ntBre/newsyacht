@@ -72,7 +72,8 @@ class Item:
         else:
             raise ValueError("Item doesn't include a GUID, link, or contents")
 
-        self.date = parsedate_to_datetime(self._raw_date)
+        if self._raw_date:
+            self.date = datetime.fromisoformat(self._raw_date)
 
     def date_str(self):
         if self.date is None:
@@ -174,13 +175,17 @@ class Feed:
 
         items = []
         for item in channel.iter("item"):
+            pub_date = get(item, "pubDate")
+            rfc_date = then(pub_date, parsedate_to_datetime)
+            if rfc_date:
+                iso_date = rfc_date.astimezone(timezone.utc).isoformat()
             items.append(
                 Item(
                     title=get(item, "title"),
                     link=get(item, "link"),
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
-                    _raw_date=get(item, "pubDate"),
+                    _raw_date=iso_date,
                     _raw_guid=get(item, "guid"),
                 )
             )
@@ -224,17 +229,13 @@ class Feed:
         items = []
         for item in root:
             if item.tag.endswith("entry"):
-                published = find(item, "published")
-                if published:
-                    iso = datetime.fromisoformat(published.replace("Z", "+00:00"))
-                    published = format_datetime(iso)
                 items.append(
                     Item(
                         title=find(item, "title"),
                         link=find(item, "link", "href"),
                         content=find(item, "content"),
                         author=author(item),
-                        _raw_date=published,
+                        _raw_date=find(item, "published"),
                         _raw_guid=find(item, "id"),
                     )
                 )
