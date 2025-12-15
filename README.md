@@ -1,40 +1,75 @@
-## Motivation
+# newsyacht
 
-I like the simplicity of newsboat, and it works well, but there are a few
-additional features I'm interested in:
-- A single feed of all articles
-- Visual elements like YouTube thumbnails
-- Custom ranking algorithms
-- Fun
+An RSS/Atom feed reader with a web UI
 
-The first two of these are the main motivation. I guess I'm basically reaching
-for something Reddit-esque in appearance but filled with feeds of my own
-selection. I think an MVP here would just be a single reverse-chronological
-feed, and the third bullet would be a fun additional level to place on top to
-experiment with ranking of posts with up- and down-votes[^1].
+![A screenshot of the newsyacht web interface](./screenshot.png)
 
-And then the last point is always a good motivation for hobby projects: having
-some fun and learning how RSS works.
+## Installation
 
-## Design
+Install newsyacht with uv after the cloning the repository:
 
-As noted above, I'm just picturing a simple web interface with a list of links
-and some metadata where applicable, like a thumbnail for YouTube videos.
+```shell
+uv tool install .
+```
 
-I briefly considered using the newsboat database directly, since I think it's
-just a simple sqlite database, but I'm not sure how stable the schema is from
-version to version, and maybe I'll want to include additional metadata myself.
+or straight from GitHub:
 
-From talking to GPT, I think RSS is basically as simple as it appears too:
-- Fetch some URLs
-- Parse some XML
-- Store state in a database
-- Render the results to the user
+```shell
+uv tool install git+https://github.com/ntBre/newsyacht
+```
 
-Like newsboat, I can just use a cron job to update at an interval, and I think
-the rest of this is essentially present in the Python stdlib.
+## Usage
 
-[^1]: I'm reminded of this article I read a long time ago when I was
-    experimenting with elfeed for an RSS feed in Emacs:
-    https://kitchingroup.cheme.cmu.edu/blog/category/elfeed/. It describes a
-    simple scoring function for elfeed entries.
+newsyacht reads a single `urls` file from the newsyacht directory in
+`$XDG_CONFIG_HOME` (or `$HOME/.config`). To subscribe to newsyacht releases on
+GitHub you could add a URL like this:
+
+```shell
+mkdir -p ~/.config/newsyacht
+echo 'https://github.com/ntBre/newsyacht/releases.atom' > ~/.config/newsyacht/urls
+```
+
+The file should contain a single URL per line. Lines starting with `#` are
+ignored.
+
+Once you have a URL or two, run your first update with:
+
+```shell
+newsyacht update
+```
+
+Assuming that finishes successfully, you can either list the posts in the CLI:
+
+```shell
+newsyacht list
+```
+
+or, more likely, run the web server on `0.0.0.0:5000` with the `serve`
+subcommand:
+
+```shell
+newsyacht serve
+```
+
+newsyacht doesn't have any self-updating functionality, so I recommend putting
+an update command in a cron job, or similar, if you want automatic updates. For
+example:
+
+```shell
+0 0 * * * /path/to/newsyacht update
+```
+
+would update the newsyacht database nightly at midnight.
+
+## Limitations
+
+I intended to list concrete limitations, but I guess it should just suffice to
+say that this was a quick weekend project that's missing a lot of features and
+polish but is already working for my usage, so I decided to share it. With that
+said, feel free to give it a try and report any issues you run into!
+
+## References
+
+The name is a nod to [newsboat](https://newsboat.org/), a great terminal-based
+RSS feed reader that I've been using for a few years. I just thought it would be
+fun to write one of my own and put a different interface on it.
