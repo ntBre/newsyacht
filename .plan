@@ -1,0 +1,13 @@
+These are a few loose notes on future work:
+
+- Some kind of ranking/scoring system for an ordering other than
+  reverse-chronological
+- Truncate the number of displayed posts, I think it will quickly grow out of
+  hand if you subscribe to many feeds
+- Some kind of thumbnail/preview for posts that support it, especially YouTube
+  videos
+- Ways to select subsets of posts:
+  - By URL/feed
+  - By topic/tag
+  - Search
+- Fetching posts in parallel

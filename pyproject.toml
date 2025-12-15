@@ -1,7 +1,7 @@
 [project]
 name = "newsyacht"
 version = "0.1.0"
-description = "Add your description here"
+description = "An RSS/Atom feed reader with a web UI"
 readme = "README.md"
 authors = [
     { name = "Brent Westbrook", email = "brentrwestbrook@gmail.com" }
