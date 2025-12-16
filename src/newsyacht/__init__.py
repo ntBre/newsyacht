@@ -445,7 +445,7 @@ class Db:
                 [(url.link, url.color) for url in urls],
             )
 
-    def get_feeds(self, urls):
+    def get_feeds(self, urls: list[str]):
         placeholders = ",".join("?" for _ in urls)
         cur = self.conn.execute(
             f"""
@@ -543,7 +543,7 @@ class App:
             urls = self.load_urls()
             db.insert_urls(urls)
 
-            feeds = db.get_feeds(urls)
+            feeds = db.get_feeds([url.link for url in urls])
 
             items = update_feeds(feeds)
 
