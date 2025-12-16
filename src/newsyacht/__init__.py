@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 
 FeedId = NewType("FeedId", int)
+Color = NewType("Color", str)
 
 
 def then[T, U](x: T | None, f: Callable[[T], U | None]) -> U | None:
@@ -97,6 +98,9 @@ class DbItem:
     score: float
     "Ranking score, currently unused."
 
+    color: Color | None
+    "Optional color to use when rendering the author names from this feed."
+
     inner: Item
 
     @classmethod
@@ -106,6 +110,7 @@ class DbItem:
             feed_id=row["feed_id"],
             is_read=row["is_read"],
             score=row["score"],
+            color=row["color"],
             inner=Item(
                 title=row["title"],
                 content=row["content"],
@@ -252,15 +257,34 @@ class Feed:
         )
 
 
-def load_urls(path) -> list[str]:
+@dataclass
+class Url:
+    link: str
+    color: Color | None = None
+
+
+def load_urls(path) -> list[Url]:
     """
     Load a sequence of URLs from `path`, one per line.
+
+    Lines starting with `#` are ignored.
     """
-    return [
-        url.strip()
-        for url in Path(path).read_text().splitlines()
-        if not url.startswith("#")
-    ]
+
+    urls = []
+    for line in Path(path).read_text().splitlines():
+        if line.startswith("#"):
+            continue
+
+        match line.strip().split():
+            case [url]:
+                urls.append(Url(url))
+            case [url, color]:
+                urls.append(Url(url, color))
+            case line:
+                msg = f"Unable to parse line: {line}"
+                raise ValueError(msg)
+
+    return urls
 
 
 def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
@@ -339,7 +363,7 @@ class Db:
     def __init__(self, path):
         self.path = path
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.conn = sqlite3.connect(self.path)
         self._setup_connection()
         return self
@@ -355,6 +379,7 @@ class Db:
             CREATE TABLE IF NOT EXISTS feeds (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 url TEXT NOT NULL UNIQUE,
+                color TEXT,
                 title TEXT,
                 description TEXT,
                 etag TEXT,
@@ -385,8 +410,22 @@ class Db:
     def get_posts(self) -> list[DbItem]:
         cur = self.conn.execute(
             """
-            SELECT id, feed_id, is_read, score, title, content, link, author, comments, date, guid
+            SELECT
+                items.id,
+                items.feed_id,
+                items.is_read,
+                items.score,
+                items.title,
+                items.content,
+                items.link,
+                items.author,
+                items.comments,
+                items.date,
+                items.guid,
+                feeds.color
             FROM items
+            JOIN feeds
+            ON feeds.id = items.feed_id
             """
         )
 
@@ -394,18 +433,19 @@ class Db:
 
         return posts
 
-    def insert_urls(self, urls):
+    def insert_urls(self, urls: list[Url]):
         with self.conn:
             self.conn.executemany(
                 """
-                INSERT INTO feeds (url)
-                VALUES (?)
-                ON CONFLICT(url) DO NOTHING;
+                INSERT INTO feeds (url, color)
+                VALUES (?, ?)
+                ON CONFLICT(url) DO UPDATE SET
+                    color = excluded.color
                 """,
-                [(url,) for url in urls],
+                [(url.link, url.color) for url in urls],
             )
 
-    def get_feeds(self, urls):
+    def get_feeds(self, urls: list[str]):
         placeholders = ",".join("?" for _ in urls)
         cur = self.conn.execute(
             f"""
@@ -438,7 +478,7 @@ class Db:
                 ],
             )
 
-    def insert_items(self, items: list[tuple[FeedId, DbItem]]):
+    def insert_items(self, items: list[tuple[FeedId, Item]]):
         with self.conn:
             self.conn.executemany(
                 """
@@ -495,7 +535,7 @@ class Db:
 class App:
     config_dir: Path
 
-    def load_urls(self) -> list[str]:
+    def load_urls(self) -> list[Url]:
         return load_urls(self.config_dir / "urls")
 
     def update(self, _args):
@@ -503,7 +543,7 @@ class App:
             urls = self.load_urls()
             db.insert_urls(urls)
 
-            feeds = db.get_feeds(urls)
+            feeds = db.get_feeds([url.link for url in urls])
 
             items = update_feeds(feeds)
 

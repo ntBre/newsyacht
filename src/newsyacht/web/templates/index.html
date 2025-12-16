@@ -32,7 +32,13 @@
 		</div>
 
 		<div class="post-meta">
+		  <span
+			{% if post.color %}
+			style="color:{{ post.color }}"
+			{% endif %}
+			>
           {{ post.author }}
+		  </span>
 		  ·
 		  <time
 			datetime="{{ post.date.isoformat() }}"
