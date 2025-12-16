@@ -339,7 +339,7 @@ class Db:
     def __init__(self, path):
         self.path = path
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.conn = sqlite3.connect(self.path)
         self._setup_connection()
         return self
@@ -438,7 +438,7 @@ class Db:
                 ],
             )
 
-    def insert_items(self, items: list[tuple[FeedId, DbItem]]):
+    def insert_items(self, items: list[tuple[FeedId, Item]]):
         with self.conn:
             self.conn.executemany(
                 """
