@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 from xml.etree import ElementTree
 
 import pytest
-from newsyacht import Db, DbItem, Feed, FeedId, Item, load_urls
+from newsyacht import Db, DbItem, Feed, FeedId, load_urls
 
 
 @pytest.mark.parametrize("path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml"])
