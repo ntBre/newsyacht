@@ -35,6 +35,12 @@
   	  .post-meta a:hover {
   		  text-decoration: underline;
   	  }
+  	  .post-author {
+  		  border-radius: 9999px;
+  		  padding: 0.15em 0.6em;
+  		  font-size: 0.8rem;
+  		  font-weight: 500;
+  	  }
   	</style>
     </head>
     <body>
@@ -48,12 +54,11 @@
   
   		<div class="post-meta">
   		  <span
+  			class="post-author"
   			
-  			style="color:#ff6600"
+  			style="background-color:#ff6600; color:white"
   			
-  			>
-            None
-  		  </span>
+  			>None</span>
   		  ·
   		  <time
   			datetime="2025-12-13T22:58:29+00:00"
