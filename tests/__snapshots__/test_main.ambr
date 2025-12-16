@@ -86,3 +86,96 @@
     Url(link='https://news.ycombinator.com/rss', color='#ff6600'),
   ])
 # ---
+# name: test_ranked_index
+  '''
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+  	<meta charset="utf-8">
+  	<meta name="viewport" content="width=device-width, initial-scale=1">
+  	<title>newsyacht</title>
+  	<style>
+  	  body {
+  		  font-size: 18px;
+  		  line-height: 1.5;
+  	  }
+  	  .post-meta {
+  		  font-size: 0.85em;
+  		  color: #888;
+  	  }
+  	  .post-meta a {
+  		  color: inherit;
+  		  text-decoration: none;
+  	  }
+  	  .post-meta a:hover {
+  		  text-decoration: underline;
+  	  }
+  	</style>
+    </head>
+    <body>
+  	<h2>Unread</h2>
+  	<ul>
+  	  
+  	  <li class="post">
+  		<div class="post-title">
+  		  <a href="/read/2">Higher scoring post</a>
+  		</div>
+  
+  		<div class="post-meta">
+  		  <span
+  			
+  			style="color:#ff6600"
+  			
+  			>
+            None
+  		  </span>
+  		  ·
+  		  <time
+  			datetime="2025-12-13T22:58:29+00:00"
+  			title="2025-12-13 22:58:29 UTC"
+  			>
+  			2025-12-13
+  		  </time>
+  		  
+  		  · <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
+  		  
+  		  · <a href="/mark-read/2">Mark Read</a>
+  		</div>
+  	  </li>
+  	  
+  	  <li class="post">
+  		<div class="post-title">
+  		  <a href="/read/1">Linux Sandboxes and Fil-C</a>
+  		</div>
+  
+  		<div class="post-meta">
+  		  <span
+  			
+  			style="color:#ff6600"
+  			
+  			>
+            None
+  		  </span>
+  		  ·
+  		  <time
+  			datetime="2025-12-13T22:58:29+00:00"
+  			title="2025-12-13 22:58:29 UTC"
+  			>
+  			2025-12-13
+  		  </time>
+  		  
+  		  · <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
+  		  
+  		  · <a href="/mark-read/1">Mark Read</a>
+  		</div>
+  	  </li>
+  	  
+  	</ul>
+  	<h2>Read</h2>
+  	<ul>
+  	  
+  	</ul>
+    </body>
+  </html>
+  '''
+# ---

@@ -1,17 +1,18 @@
+from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from xml.etree import ElementTree
 
 import pytest
-from newsyacht import Color, Db, Feed, FeedId, Item, Url, load_urls
+from newsyacht import Color, Db, Feed, FeedId, Item, Score, Url, load_urls
 from newsyacht.web import App
 
 
 @pytest.fixture
-def hn_post() -> list[tuple[FeedId, Item]]:
+def hn_post() -> list[tuple[FeedId, Score, Item]]:
     tree = ElementTree.parse("tests/fixtures/hn.xml")
     feed = Feed._from_xml(tree)
-    return [(FeedId(1), feed.items[0])]
+    return [(FeedId(1), Score(0.9), feed.items[0])]
 
 
 @pytest.fixture
@@ -45,6 +46,27 @@ def test_index(snapshot, hn_url, hn_post):
         path = Path(d) / "test.db"
         with Db(path) as db:
             db.insert_urls(hn_url)
+            db.insert_items(hn_post)
+
+        app = App(path)
+        client = app.app.test_client()
+        response = client.get("/")
+
+        assert snapshot == response.text
+
+
+def test_ranked_index(snapshot, hn_url, hn_post):
+    with TemporaryDirectory() as d:
+        path = Path(d) / "test.db"
+        with Db(path) as db:
+            db.insert_urls(hn_url)
+            # append a second post with a higher score and test that it sorts
+            # first
+            feed_id, score, item = hn_post[0]
+            new_item = deepcopy(item)
+            new_item.title = "Higher scoring post"
+            new_item.guid = new_item.title
+            hn_post.append((feed_id, Score(1.0), new_item))
             db.insert_items(hn_post)
 
         app = App(path)
