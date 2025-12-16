@@ -438,18 +438,19 @@ class Db:
                 ],
             )
 
-    def insert_items(self, items):
+    def insert_items(self, items: list[tuple[FeedId, DbItem]]):
         with self.conn:
             self.conn.executemany(
                 """
-                INSERT INTO items (feed_id, guid, title, content, link, author, date)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO items (feed_id, guid, title, content, link, author, date, comments)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(feed_id, guid) DO UPDATE SET
                     title = excluded.title,
                     content = excluded.content,
                     link = excluded.link,
                     author = excluded.author,
-                    date = excluded.date
+                    date = excluded.date,
+                    comments = excluded.comments
                 """,
                 [
                     (
@@ -460,6 +461,7 @@ class Db:
                         item.link,
                         item.author,
                         item.date_str(),
+                        item.comments,
                     )
                     for feed_id, item in items
                 ],
