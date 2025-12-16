@@ -98,6 +98,9 @@ class DbItem:
     score: float
     "Ranking score, currently unused."
 
+    color: Color | None
+    "Optional color to use when rendering the author names from this feed."
+
     inner: Item
 
     @classmethod
@@ -107,6 +110,7 @@ class DbItem:
             feed_id=row["feed_id"],
             is_read=row["is_read"],
             score=row["score"],
+            color=row["color"],
             inner=Item(
                 title=row["title"],
                 content=row["content"],
@@ -375,6 +379,7 @@ class Db:
             CREATE TABLE IF NOT EXISTS feeds (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 url TEXT NOT NULL UNIQUE,
+                color TEXT,
                 title TEXT,
                 description TEXT,
                 etag TEXT,
@@ -405,8 +410,22 @@ class Db:
     def get_posts(self) -> list[DbItem]:
         cur = self.conn.execute(
             """
-            SELECT id, feed_id, is_read, score, title, content, link, author, comments, date, guid
+            SELECT
+                items.id,
+                items.feed_id,
+                items.is_read,
+                items.score,
+                items.title,
+                items.content,
+                items.link,
+                items.author,
+                items.comments,
+                items.date,
+                items.guid,
+                feeds.color
             FROM items
+            JOIN feeds
+            ON feeds.id = items.feed_id
             """
         )
 
@@ -414,15 +433,16 @@ class Db:
 
         return posts
 
-    def insert_urls(self, urls):
+    def insert_urls(self, urls: list[Url]):
         with self.conn:
             self.conn.executemany(
                 """
-                INSERT INTO feeds (url)
-                VALUES (?)
-                ON CONFLICT(url) DO NOTHING;
+                INSERT INTO feeds (url, color)
+                VALUES (?, ?)
+                ON CONFLICT(url) DO UPDATE SET
+                    color = excluded.color
                 """,
-                [(url,) for url in urls],
+                [(url.link, url.color) for url in urls],
             )
 
     def get_feeds(self, urls):
@@ -515,7 +535,7 @@ class Db:
 class App:
     config_dir: Path
 
-    def load_urls(self) -> list[str]:
+    def load_urls(self) -> list[Url]:
         return load_urls(self.config_dir / "urls")
 
     def update(self, _args):
