@@ -8,3 +8,6 @@
 # name: test_label_text_color[#ff6600]
   '#fff'
 # ---
+# name: test_label_text_color[orange]
+  '#fff'
+# ---

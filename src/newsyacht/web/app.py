@@ -1,22 +1,34 @@
+import logging
 from operator import attrgetter
 from pathlib import Path
+import re
 
 from flask import Flask, redirect, render_template
 from newsyacht import Db, DbItem
 
 
-def label_text_color(bg_hex: str) -> str:
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+
+HEX_COLOR = re.compile(r"#([a-zA-Z0-9]{6})")
+
+
+def label_text_color(color: str) -> str:
     """
     Return '#fff' or '#111' depending on the background color brightness.
-    Accepts '#RRGGBB' or 'RRGGBB'.
     """
-    h = bg_hex.lstrip("#")
-    if len(h) != 6:
-        return "#fff"  # safe fallback
 
-    r = int(h[0:2], 16)
-    g = int(h[2:4], 16)
-    b = int(h[4:6], 16)
+    if not (m := HEX_COLOR.fullmatch(color)):
+        logging.warning(
+            "Failed to parse %s as a hex color, falling back to #fff", color
+        )
+        return "#fff"
+
+    digits = m[1]
+
+    r = int(digits[0:2], 16)
+    g = int(digits[2:4], 16)
+    b = int(digits[4:6], 16)
 
     # WCAG-ish relative luminance (sRGB -> linear -> luminance)
     def lin(c: int) -> float:
