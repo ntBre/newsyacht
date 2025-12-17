@@ -20,6 +20,12 @@
 	  .post-meta a:hover {
 		  text-decoration: underline;
 	  }
+	  .post-author {
+		  border-radius: 9999px;
+		  padding: 0.15em 0.6em;
+		  font-size: 0.8rem;
+		  font-weight: 500;
+	  }
 	</style>
   </head>
   <body>
@@ -33,12 +39,11 @@
 
 		<div class="post-meta">
 		  <span
+			class="post-author"
 			{% if post.color %}
-			style="color:{{ post.color }}"
+			style="background-color:{{ post.color }}; color:white"
 			{% endif %}
-			>
-          {{ post.author }}
-		  </span>
+			>{{ post.author }}</span>
 		  ·
 		  <time
 			datetime="{{ post.date.isoformat() }}"
