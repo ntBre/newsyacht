@@ -23,7 +23,7 @@ FeedId = NewType("FeedId", int)
 Color = NewType("Color", str)
 
 
-def then[T, U](x: T | None, f: Callable[[T], U | None]) -> U | None:
+def then[T, U](x: T | None, f: Callable[[T], U]) -> U | None:
     """If the optional value `x` is some, return the result of applying `f`,
     else return `None`"""
     if x is None:
@@ -184,7 +184,12 @@ class Feed:
         items = []
         for item in channel.iter("item"):
             pub_date = get(item, "pubDate")
-            rfc_date = then(pub_date, parsedate_to_datetime)
+
+            # TODO(brent) I'm pretty sure ty is doing something wrong here
+            # related to https://github.com/astral-sh/ty/issues/1872. If I
+            # change T and U in `then` to `str` and `datetime`, it type checks,
+            # so this seems to be an issue with generic callables.
+            rfc_date: datetime | None = then(pub_date, parsedate_to_datetime)  # ty: ignore [invalid-assignment, invalid-argument-type]
             if rfc_date:
                 iso_date = rfc_date.astimezone(timezone.utc).isoformat()
             items.append(
