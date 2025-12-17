@@ -1,8 +1,44 @@
+import logging
 from operator import attrgetter
 from pathlib import Path
+import re
 
 from flask import Flask, redirect, render_template
 from newsyacht import Db, DbItem
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+
+HEX_COLOR = re.compile(r"#([a-zA-Z0-9]{6})")
+
+
+def label_text_color(color: str) -> str:
+    """
+    Return '#fff' or '#111' depending on the background color brightness.
+    """
+
+    if not (m := HEX_COLOR.fullmatch(color)):
+        logging.warning(
+            "Failed to parse %s as a hex color, falling back to #fff", color
+        )
+        return "#fff"
+
+    digits = m[1]
+
+    r = int(digits[0:2], 16)
+    g = int(digits[2:4], 16)
+    b = int(digits[4:6], 16)
+
+    # WCAG-ish relative luminance (sRGB -> linear -> luminance)
+    def lin(c: int) -> float:
+        x = c / 255.0
+        return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
+
+    L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+
+    # Tune threshold to taste. ~0.45–0.55 is a common range.
+    return "#111" if L > 0.5 else "#fff"
 
 
 class App:
@@ -12,6 +48,8 @@ class App:
     def __init__(self, db: Path):
         self.db = db
         self.app = Flask(__name__)
+
+        self.app.jinja_env.filters["label_text_color"] = label_text_color
 
         @self.app.route("/")
         def index():

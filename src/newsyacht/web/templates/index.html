@@ -41,7 +41,7 @@
 		  <span
 			class="post-author"
 			{% if post.color %}
-			style="background-color:{{ post.color }}; color:white"
+			style="background-color:{{ post.color }}; color: {{ post.color | label_text_color }}"
 			{% endif %}
 			>{{ post.author }}</span>
 		  ·
