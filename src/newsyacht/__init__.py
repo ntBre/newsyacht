@@ -1,8 +1,10 @@
 import argparse
 import logging
+import math
 import os
+import random
 import sqlite3
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -21,6 +23,7 @@ logging.basicConfig()
 
 FeedId = NewType("FeedId", int)
 Color = NewType("Color", str)
+Score = NewType("Score", float)
 
 
 def then[T, U](x: T | None, f: Callable[[T], U]) -> U | None:
@@ -126,6 +129,11 @@ class DbItem:
         if hasattr(self.inner, attr):
             return getattr(self.inner, attr)
         return getattr(self, attr)
+
+    @property
+    def day(self) -> str:
+        "Return the date in the form YYYY-MM-DD instead of the full timestamp"
+        return self.date.strftime("%Y-%m-%d")
 
 
 type XmlTree = (
@@ -292,7 +300,29 @@ def load_urls(path) -> list[Url]:
     return urls
 
 
-def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
+def initial_score(count: int) -> float:
+    """
+    A rudimentary scoring function.
+
+    All this does for now is return an exponentially decaying value as the
+    number of items from the same source increases.
+
+    We want the score to be bounded in [0, 1], so e^{-x} has the right
+    properties: for the zeroth element it gives 1 and decreases from there. I
+    think it might decrease a bit more quickly than we really want, but that's
+    fine for now since every feed gets the same treatment.
+
+    In other words, it doesn't matter if the score for every second post falls
+    from 1.0 to 0.4 (~e^{-2}) or from 1.0 to 0.9 because every second post will
+    fall by the same amount.
+
+    However, we also throw in a small random variation just for fun.
+    """
+    eps = 0.1 * random.random()
+    return math.exp(-(count + eps))
+
+
+def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
     """
     Fetch a list of feeds, update their metadata in place, and return a
     list of items.
@@ -307,6 +337,7 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
             headers["last-modified"] = feed.last_modified
 
         response = httpx.get(feed.url, follow_redirects=True, headers=headers)
+        items_per_feed = Counter()
         if response.status_code == httpx.codes.OK:
             etag = response.headers.get("etag")
             last_modified = response.headers.get("last-modified")
@@ -316,7 +347,9 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Item]]:
                 logging.error("Failed to parse %s", feed.url)
                 raise e
             feed.update(etag=etag, last_modified=last_modified, feed=body)
-            items.extend((feed.id, item) for item in body.items)
+            for item in body.items:
+                items.append((feed.id, initial_score(items_per_feed[feed.id]), item))
+                items_per_feed[feed.id] += 1
         else:
             logger.error(
                 "failed to retrieve %s with %s", feed.url, response.status_code
@@ -483,19 +516,20 @@ class Db:
                 ],
             )
 
-    def insert_items(self, items: list[tuple[FeedId, Item]]):
+    def insert_items(self, items: list[tuple[FeedId, Score, Item]]):
         with self.conn:
             self.conn.executemany(
                 """
-                INSERT INTO items (feed_id, guid, title, content, link, author, date, comments)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO items (feed_id, guid, title, content, link, author, date, comments, score)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(feed_id, guid) DO UPDATE SET
                     title = excluded.title,
                     content = excluded.content,
                     link = excluded.link,
                     author = excluded.author,
                     date = excluded.date,
-                    comments = excluded.comments
+                    comments = excluded.comments,
+                    score = excluded.score
                 """,
                 [
                     (
@@ -507,8 +541,9 @@ class Db:
                         item.author,
                         item.date_str(),
                         item.comments,
+                        score,
                     )
-                    for feed_id, item in items
+                    for feed_id, score, item in items
                 ],
             )
 

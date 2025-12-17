@@ -44,7 +44,7 @@
 			datetime="{{ post.date.isoformat() }}"
 			title="{{ post.date.strftime('%Y-%m-%d %H:%M:%S %Z') }}"
 			>
-			{{ post.date.strftime('%Y-%m-%d') }}
+			{{ post.day }}
 		  </time>
 		  {% if post.comments %}
 		  · <a href="{{post.comments}}">Comments</a>

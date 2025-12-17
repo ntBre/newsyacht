@@ -18,7 +18,7 @@ class App:
             with Db(self.db) as db:
                 posts: list[DbItem] = sorted(
                     (post for post in db.get_posts() if post.link is not None),
-                    key=attrgetter("date"),
+                    key=attrgetter("day", "score"),
                     reverse=True,
                 )
                 for post in posts:
