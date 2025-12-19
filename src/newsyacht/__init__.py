@@ -471,6 +471,34 @@ class Db:
 
         return posts
 
+    def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
+        cur = self.conn.execute(
+            """
+            SELECT
+                items.id,
+                items.feed_id,
+                items.is_read,
+                items.score,
+                items.title,
+                items.content,
+                items.link,
+                items.author,
+                items.comments,
+                items.date,
+                items.guid,
+                feeds.color
+            FROM items
+            JOIN feeds
+            ON feeds.id = items.feed_id
+            WHERE items.feed_id = ?
+            """,
+            (feed_id,),
+        )
+
+        posts = [DbItem.from_row(row) for row in cur.fetchall()]
+
+        return posts
+
     def insert_urls(self, urls: list[Url]):
         with self.conn:
             self.conn.executemany(
