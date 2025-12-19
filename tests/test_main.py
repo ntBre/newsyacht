@@ -31,6 +31,13 @@ def db(db_path):
 
 
 @pytest.fixture
+def seeded_db(db, hn_url, hn_post):
+    db.insert_urls(hn_url)
+    db.insert_items(hn_post)
+    return db
+
+
+@pytest.fixture
 def app(db_path):
     return App(db_path)
 
@@ -51,18 +58,14 @@ def test_load_urls(snapshot):
     assert load_urls("tests/fixtures/urls") == snapshot
 
 
-def test_insert_comments(snapshot, db, hn_url, hn_post):
-    db.insert_urls(hn_url)
-    db.insert_items(hn_post)
-    posts = db.get_posts()
+def test_insert_comments(snapshot, seeded_db):
+    posts = seeded_db.get_posts()
 
     assert len(posts) == 1
     assert posts[0].comments == snapshot
 
 
-def test_index(snapshot, db, hn_url, hn_post, client):
-    db.insert_urls(hn_url)
-    db.insert_items(hn_post)
+def test_index(snapshot, seeded_db, client):
     response = client.get("/")
     assert snapshot == response.text
 
@@ -83,8 +86,6 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
     assert snapshot == response.text
 
 
-def test_feed(snapshot, db, hn_url, hn_post, client):
-    db.insert_urls(hn_url)
-    db.insert_items(hn_post)
+def test_feed(snapshot, seeded_db, client):
     response = client.get("/feed/1")
     assert snapshot == response.text
