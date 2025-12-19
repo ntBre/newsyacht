@@ -41,27 +41,6 @@ def test_insert_comments(snapshot, hn_url, hn_post):
     assert posts[0].comments == snapshot
 
 
-def test_ranked_index(snapshot, hn_url, hn_post):
-    with TemporaryDirectory() as d:
-        path = Path(d) / "test.db"
-        with Db(path) as db:
-            db.insert_urls(hn_url)
-            # append a second post with a higher score and test that it sorts
-            # first
-            feed_id, score, item = hn_post[0]
-            new_item = deepcopy(item)
-            new_item.title = "Higher scoring post"
-            new_item.guid = new_item.title
-            hn_post.append((feed_id, Score(1.0), new_item))
-            db.insert_items(hn_post)
-
-        app = App(path)
-        client = app.app.test_client()
-        response = client.get("/")
-
-        assert snapshot == response.text
-
-
 @pytest.fixture
 def db_path(tmp_path):
     return tmp_path / "test.db"
@@ -87,6 +66,22 @@ def test_index(snapshot, db, hn_url, hn_post, client):
     db.insert_urls(hn_url)
     db.insert_items(hn_post)
     response = client.get("/")
+    assert snapshot == response.text
+
+
+def test_ranked_index(snapshot, db, hn_url, hn_post, client):
+    db.insert_urls(hn_url)
+    # append a second post with a higher score and test that it sorts
+    # first
+    feed_id, score, item = hn_post[0]
+    new_item = deepcopy(item)
+    new_item.title = "Higher scoring post"
+    new_item.guid = new_item.title
+    hn_post.append((feed_id, Score(1.0), new_item))
+    db.insert_items(hn_post)
+
+    response = client.get("/")
+
     assert snapshot == response.text
 
 
