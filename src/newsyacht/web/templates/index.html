@@ -29,34 +29,11 @@
 	</style>
   </head>
   <body>
+	{% import "posts.html" as p %}
 	<h2>Unread</h2>
 	<ul>
 	  {% for post in unread_posts %}
-	  <li class="post">
-		<div class="post-title">
-		  <a href="/read/{{ post.id }}">{{ post.title }}</a>
-		</div>
-
-		<div class="post-meta">
-		  <span
-			class="post-author"
-			{% if post.color %}
-			style="background-color:{{ post.color }}; color: {{ post.color | label_text_color }}"
-			{% endif %}
-			>{{ post.author }}</span>
-		  ·
-		  <time
-			datetime="{{ post.date.isoformat() }}"
-			title="{{ post.date.strftime('%Y-%m-%d %H:%M:%S %Z') }}"
-			>
-			{{ post.day }}
-		  </time>
-		  {% if post.comments %}
-		  · <a href="{{post.comments}}">Comments</a>
-		  {% endif %}
-		  · <a href="/mark-read/{{ post.id }}">Mark Read</a>
-		</div>
-	  </li>
+		{{ p.render_post(post) }}
 	  {% endfor %}
 	</ul>
 	<h2>Read</h2>
