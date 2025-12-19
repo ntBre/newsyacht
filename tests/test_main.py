@@ -65,11 +65,6 @@ def test_insert_comments(snapshot, seeded_db):
     assert posts[0].comments == snapshot
 
 
-def test_index(snapshot, seeded_db, client):
-    response = client.get("/")
-    assert snapshot == response.text
-
-
 def test_ranked_index(snapshot, db, hn_url, hn_post, client):
     db.insert_urls(hn_url)
     # append a second post with a higher score and test that it sorts
@@ -86,6 +81,7 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
     assert snapshot == response.text
 
 
-def test_feed(snapshot, seeded_db, client):
-    response = client.get("/feed/1")
+@pytest.mark.parametrize("endpoint", ["/", "/feed/1"])
+def test_endpoint(snapshot, seeded_db, client, endpoint):
+    response = client.get(endpoint)
     assert snapshot == response.text
