@@ -41,20 +41,6 @@ def test_insert_comments(snapshot, hn_url, hn_post):
     assert posts[0].comments == snapshot
 
 
-def test_index(snapshot, hn_url, hn_post):
-    with TemporaryDirectory() as d:
-        path = Path(d) / "test.db"
-        with Db(path) as db:
-            db.insert_urls(hn_url)
-            db.insert_items(hn_post)
-
-        app = App(path)
-        client = app.app.test_client()
-        response = client.get("/")
-
-        assert snapshot == response.text
-
-
 def test_ranked_index(snapshot, hn_url, hn_post):
     with TemporaryDirectory() as d:
         path = Path(d) / "test.db"
@@ -95,6 +81,13 @@ def app(db_path):
 @pytest.fixture
 def client(app):
     return app.app.test_client()
+
+
+def test_index(snapshot, db, hn_url, hn_post, client):
+    db.insert_urls(hn_url)
+    db.insert_items(hn_post)
+    response = client.get("/")
+    assert snapshot == response.text
 
 
 def test_feed(snapshot, db, hn_url, hn_post, client):
