@@ -1,33 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>newsyacht</title>
-	<style>
-	  body {
-		  font-size: 18px;
-		  line-height: 1.5;
-	  }
-	  .post-meta {
-		  font-size: 0.85em;
-		  color: #888;
-	  }
-	  .post-meta a {
-		  color: inherit;
-		  text-decoration: none;
-	  }
-	  .post-meta a:hover {
-		  text-decoration: underline;
-	  }
-	  .post-author {
-		  border-radius: 9999px;
-		  padding: 0.15em 0.6em;
-		  font-size: 0.8rem;
-		  font-weight: 500;
-	  }
-	</style>
-  </head>
+  {% include "head.html" %}
   <body>
 	{% import "posts.html" as p %}
 	<h2>Unread</h2>
