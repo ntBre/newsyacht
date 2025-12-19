@@ -1,62 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>newsyacht</title>
-	<style>
-	  body {
-		  font-size: 18px;
-		  line-height: 1.5;
-	  }
-	  .post-meta {
-		  font-size: 0.85em;
-		  color: #888;
-	  }
-	  .post-meta a {
-		  color: inherit;
-		  text-decoration: none;
-	  }
-	  .post-meta a:hover {
-		  text-decoration: underline;
-	  }
-	  .post-author {
-		  border-radius: 9999px;
-		  padding: 0.15em 0.6em;
-		  font-size: 0.8rem;
-		  font-weight: 500;
-	  }
-	</style>
-  </head>
+  {% include "head.html" %}
   <body>
+	{% import "posts.html" as p %}
 	<h2>Unread</h2>
 	<ul>
 	  {% for post in unread_posts %}
-	  <li class="post">
-		<div class="post-title">
-		  <a href="/read/{{ post.id }}">{{ post.title }}</a>
-		</div>
-
-		<div class="post-meta">
-		  <span
-			class="post-author"
-			{% if post.color %}
-			style="background-color:{{ post.color }}; color: {{ post.color | label_text_color }}"
-			{% endif %}
-			>{{ post.author }}</span>
-		  ·
-		  <time
-			datetime="{{ post.date.isoformat() }}"
-			title="{{ post.date.strftime('%Y-%m-%d %H:%M:%S %Z') }}"
-			>
-			{{ post.day }}
-		  </time>
-		  {% if post.comments %}
-		  · <a href="{{post.comments}}">Comments</a>
-		  {% endif %}
-		  · <a href="/mark-read/{{ post.id }}">Mark Read</a>
-		</div>
-	  </li>
+		{{ p.render_post(post) }}
 	  {% endfor %}
 	</ul>
 	<h2>Read</h2>

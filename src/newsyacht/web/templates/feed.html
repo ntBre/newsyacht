@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% include "head.html" %}
+  <body>
+	{% import "posts.html" as p %}
+	<h2>{{ feed_title }}</h2>
+	<ul>
+	  {% for post in posts %}
+		{{ p.render_post(post) }}
+	  {% endfor %}
+	</ul>
+  </body>
+</html>

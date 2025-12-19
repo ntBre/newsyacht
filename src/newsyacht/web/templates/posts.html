@@ -1,0 +1,29 @@
+{% macro render_post(post) %}
+
+<li class="post">
+  <div class="post-title">
+	<a href="/read/{{ post.id }}">{{ post.title }}</a>
+  </div>
+
+  <div class="post-meta">
+	<span
+	  class="post-author"
+	  {% if post.color %}
+	  style="background-color:{{ post.color }}; color: {{ post.color | label_text_color }}"
+	  {% endif %}
+	  ><a href="/feed/{{ post.feed_id }}">{{ post.author }}</a></span>
+	·
+	<time
+	  datetime="{{ post.date.isoformat() }}"
+	  title="{{ post.date.strftime('%Y-%m-%d %H:%M:%S %Z') }}"
+	  >
+	  {{ post.day }}
+	</time>
+	{% if post.comments %}
+	· <a href="{{post.comments}}">Comments</a>
+	{% endif %}
+	· <a href="/mark-read/{{ post.id }}">Mark Read</a>
+  </div>
+</li>
+
+{% endmacro %}

@@ -74,3 +74,17 @@ def test_ranked_index(snapshot, hn_url, hn_post):
         response = client.get("/")
 
         assert snapshot == response.text
+
+
+def test_feed(snapshot, hn_url, hn_post):
+    with TemporaryDirectory() as d:
+        path = Path(d) / "test.db"
+        with Db(path) as db:
+            db.insert_urls(hn_url)
+            db.insert_items(hn_post)
+
+        app = App(path)
+        client = app.app.test_client()
+        response = client.get("/feed/1")
+
+        assert snapshot == response.text
