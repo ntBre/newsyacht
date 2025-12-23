@@ -29,4 +29,5 @@ dev = [
 ]
 
 [tool.ruff.lint]
-extend-select = ["UP", "DTZ", "EM"]
+preview = true
+extend-select = ["UP", "DTZ", "EM", "SIM", "PERF"]

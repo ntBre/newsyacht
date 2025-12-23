@@ -250,20 +250,19 @@ class Feed:
 
             return name.text
 
-        items = []
-        for item in root:
-            if item.tag.endswith("entry"):
-                items.append(
-                    Item(
-                        title=find(item, "title"),
-                        link=find(item, "link", "href"),
-                        content=find(item, "content"),
-                        author=author(item),
-                        comments=find(item, "comments"),
-                        _raw_date=find(item, "published") or find(item, "updated"),
-                        _raw_guid=find(item, "id"),
-                    )
-                )
+        items = [
+            Item(
+                title=find(item, "title"),
+                link=find(item, "link", "href"),
+                content=find(item, "content"),
+                author=author(item),
+                comments=find(item, "comments"),
+                _raw_date=find(item, "published") or find(item, "updated"),
+                _raw_guid=find(item, "id"),
+            )
+            for item in root
+            if item.tag.endswith("entry")
+        ]
 
         return cls(
             title=find(root, "title"),
