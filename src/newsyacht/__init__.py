@@ -77,7 +77,8 @@ class Item:
             m.update(self.content.encode())
             self.guid = m.hexdigest()
         else:
-            raise ValueError("Item doesn't include a GUID, link, or contents")
+            msg = "Item doesn't include a GUID, link, or contents"
+            raise ValueError(msg)
 
         if self._raw_date:
             self.date = datetime.fromisoformat(self._raw_date)
@@ -171,7 +172,8 @@ class Feed:
         root = tree.getroot()
 
         if root is None:
-            raise ValueError("Feed missing root tag")
+            msg = "Feed missing root tag"
+            raise ValueError(msg)
         if root.tag == "rss":
             return cls._from_rss(root)
         elif root.tag.endswith("feed"):
