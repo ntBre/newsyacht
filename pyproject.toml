@@ -27,3 +27,6 @@ dev = [
     "syrupy>=5.0.0",
     "ty>=0.0.1a32",
 ]
+
+[tool.ruff.lint]
+extend-select = ["UP"]

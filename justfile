@@ -7,8 +7,10 @@ test *args:
 accept:
 	uv run -- pytest tests --snapshot-update
 
-check:
-	uv run -- ruff check
+lint *args:
+	uv run -- ruff check {{args}}
+
+check: lint
 	uv run -- ruff format --check
 	uv run -- ty check
 
