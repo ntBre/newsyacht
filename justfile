@@ -10,8 +10,7 @@ accept:
 lint *args:
 	uv run -- ruff check {{args}}
 
-check:
-	uv run -- ruff check
+check: lint
 	uv run -- ruff format --check
 	uv run -- ty check
 
