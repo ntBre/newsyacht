@@ -7,6 +7,9 @@ test *args:
 accept:
 	uv run -- pytest tests --snapshot-update
 
+lint *args:
+	uv run -- ruff check {{args}}
+
 check:
 	uv run -- ruff check
 	uv run -- ruff format --check

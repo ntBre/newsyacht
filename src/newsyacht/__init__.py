@@ -6,13 +6,14 @@ import random
 import sqlite3
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from email.utils import parsedate_to_datetime
 from hashlib import sha256
 from importlib.metadata import version
 from operator import attrgetter
 from pathlib import Path
-from typing import Callable, NewType, Self
+from typing import NewType, Self
+from collections.abc import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
@@ -84,7 +85,7 @@ class Item:
     def date_str(self):
         if self.date is None:
             return None
-        return self.date.astimezone(timezone.utc).isoformat()
+        return self.date.astimezone(UTC).isoformat()
 
 
 @dataclass
@@ -199,7 +200,7 @@ class Feed:
             # so this seems to be an issue with generic callables.
             rfc_date: datetime | None = then(pub_date, parsedate_to_datetime)  # ty: ignore [invalid-assignment, invalid-argument-type]
             if rfc_date:
-                iso_date = rfc_date.astimezone(timezone.utc).isoformat()
+                iso_date = rfc_date.astimezone(UTC).isoformat()
             items.append(
                 Item(
                     title=get(item, "title"),
