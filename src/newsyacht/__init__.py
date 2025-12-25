@@ -80,8 +80,7 @@ class Item:
             msg = "Item doesn't include a GUID, link, or contents"
             raise ValueError(msg)
 
-        if self._raw_date:
-            self.date = datetime.fromisoformat(self._raw_date)
+        self.date = datetime.fromisoformat(self._raw_date) if self._raw_date else None
 
     def date_str(self):
         if self.date is None:
@@ -201,8 +200,7 @@ class Feed:
             # change T and U in `then` to `str` and `datetime`, it type checks,
             # so this seems to be an issue with generic callables.
             rfc_date: datetime | None = then(pub_date, parsedate_to_datetime)  # ty: ignore [invalid-assignment, invalid-argument-type]
-            if rfc_date:
-                iso_date = rfc_date.astimezone(UTC).isoformat()
+            iso_date = rfc_date.astimezone(UTC).isoformat() if rfc_date else None
             items.append(
                 Item(
                     title=get(item, "title"),
