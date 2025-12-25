@@ -47,7 +47,9 @@ def client(app):
     return app.app.test_client()
 
 
-@pytest.mark.parametrize("path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml"])
+@pytest.mark.parametrize(
+    "path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml", "nodate.xml"]
+)
 def test_feed_from_xml(path, snapshot):
     base = Path("tests/fixtures")
     tree = ElementTree.parse(base / path)
