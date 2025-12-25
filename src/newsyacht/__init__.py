@@ -360,9 +360,9 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
             last_modified = response.headers.get("last-modified")
             try:
                 body = Feed.from_xml(response.text)
-            except ValueError as e:
-                logging.error("Failed to parse %s", feed.url)
-                raise e
+            except ValueError:
+                logging.exception("Failed to parse %s", feed.url)
+                raise
             feed.update(etag=etag, last_modified=last_modified, feed=body)
             for item in body.items:
                 items.append((feed.id, initial_score(items_per_feed[feed.id]), item))
