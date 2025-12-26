@@ -337,7 +337,22 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
         if feed.last_modified:
             headers["last-modified"] = feed.last_modified
 
-        response = httpx.get(feed.url, follow_redirects=True, headers=headers)
+        # this is the default, but set it explicitly to reuse in the log
+        # message.
+        timeout = 5.0
+        try:
+            response = httpx.get(
+                feed.url, follow_redirects=True, headers=headers, timeout=timeout
+            )
+        except httpx.TimeoutException:
+            logger.error(
+                "Retrieving %s timed out after %.1f sec",
+                feed.url,
+                timeout,
+                exc_info=False,  # very noisy and doesn't add any useful info
+            )
+            continue
+
         items_per_feed = Counter()
         if response.status_code == httpx.codes.OK:
             etag = response.headers.get("etag")

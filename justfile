@@ -12,7 +12,7 @@ lint *args:
 
 check: lint
 	uv run -- ruff format --check
-	uv run -- ty check
+	uv run -- ty check --no-progress
 
 format:
 	uv run -- ruff format
