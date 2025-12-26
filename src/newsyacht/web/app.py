@@ -19,9 +19,7 @@ def label_text_color(color: str) -> str:
     """
 
     if not (m := HEX_COLOR.fullmatch(color)):
-        logging.warning(
-            "Failed to parse %s as a hex color, falling back to #fff", color
-        )
+        logger.warning("Failed to parse %s as a hex color, falling back to #fff", color)
         return "#fff"
 
     digits = m[1]
