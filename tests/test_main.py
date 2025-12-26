@@ -3,6 +3,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 import pytest
+
 from newsyacht import Color, Db, Feed, FeedId, Item, Score, Url, load_urls
 from newsyacht.web import App
 

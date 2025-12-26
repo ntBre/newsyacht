@@ -1,11 +1,11 @@
 import logging
+import re
 from operator import attrgetter
 from pathlib import Path
-import re
 
 from flask import Flask, redirect, render_template
-from newsyacht import Db, DbItem, FeedId
 
+from newsyacht import Db, DbItem, FeedId
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()

@@ -5,15 +5,15 @@ import os
 import random
 import sqlite3
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from hashlib import sha256
 from importlib.metadata import version
 from operator import attrgetter
 from pathlib import Path
 from typing import NewType, Self
-from collections.abc import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 

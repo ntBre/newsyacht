@@ -34,9 +34,11 @@ extend-select = [
     "DTZ",
     "EM",
     "G",
+    "I"
     "LOG",
     "PERF",
     "PT",
+    "PTH",
     "RET",
     "SIM",
     "TRY",
