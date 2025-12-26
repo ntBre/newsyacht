@@ -173,13 +173,15 @@ class Feed:
         if root is None:
             msg = "Feed missing root tag"
             raise ValueError(msg)
+
         if root.tag == "rss":
             return cls._from_rss(root)
-        elif root.tag.endswith("feed"):
+
+        if root.tag.endswith("feed"):
             return cls._from_atom(root)
-        else:
-            msg = f"Unexpected root tag: {root.tag}"
-            raise ValueError(msg)
+
+        msg = f"Unexpected root tag: {root.tag}"
+        raise ValueError(msg)
 
     @classmethod
     def _from_rss(cls, root: Element[str]) -> Self:
@@ -226,6 +228,7 @@ class Feed:
             for item in element:
                 if item.tag.endswith(field):
                     return item
+            return None
 
         def find(
             element: Element[str], target: str, attr: str | None = None
@@ -234,8 +237,8 @@ class Feed:
             if item is not None:
                 if attr is None:
                     return item.text
-                else:
-                    return item.attrib[attr]
+                return item.attrib[attr]
+            return None
 
         def author(element: Element[str]):
             author = get(element, "author")
@@ -482,9 +485,7 @@ class Db:
             """
         )
 
-        posts = [DbItem.from_row(row) for row in cur.fetchall()]
-
-        return posts
+        return [DbItem.from_row(row) for row in cur.fetchall()]
 
     def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
         cur = self.conn.execute(
@@ -510,9 +511,7 @@ class Db:
             (feed_id,),
         )
 
-        posts = [DbItem.from_row(row) for row in cur.fetchall()]
-
-        return posts
+        return [DbItem.from_row(row) for row in cur.fetchall()]
 
     def insert_urls(self, urls: list[Url]):
         with self.conn:
