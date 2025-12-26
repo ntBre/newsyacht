@@ -88,3 +88,14 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
 def test_endpoint(snapshot, seeded_db, client, endpoint):
     response = client.get(endpoint)
     assert snapshot == response.text
+
+
+def test_index_missing_date(snapshot, db, client):
+    url = "https://example.com/nodate.xml"
+    db.insert_urls([Url(link=url)])
+    feed_id = db.get_feeds([url])[0].id
+    tree = ElementTree.parse("tests/fixtures/nodate.xml")
+    feed = Feed._from_xml(tree)
+    db.insert_items([(FeedId(feed_id), Score(0.9), feed.items[0])])
+    response = client.get("/")
+    assert snapshot == response.text
