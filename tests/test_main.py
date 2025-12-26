@@ -72,11 +72,11 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
     db.insert_urls(hn_url)
     # append a second post with a higher score and test that it sorts
     # first
-    feed_id, score, item = hn_post[0]
+    feed_id, _score, item = hn_post[0]
     new_item = deepcopy(item)
     new_item.title = "Higher scoring post"
     new_item.guid = new_item.title
-    posts = hn_post + [(feed_id, Score(1.0), new_item)]
+    posts = [*hn_post, (feed_id, Score(1.0), new_item)]
     db.insert_items(posts)
 
     response = client.get("/")
