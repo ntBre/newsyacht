@@ -349,11 +349,11 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
                 feed.url, follow_redirects=True, headers=headers, timeout=timeout
             )
         except httpx.TimeoutException:
-            logger.error(
+            logger.error(  # noqa: TRY400 exception is very noisy
                 "Retrieving %s timed out after %.1f sec",
                 feed.url,
                 timeout,
-                exc_info=False,  # very noisy and doesn't add any useful info
+                exc_info=False,
             )
             continue
 
