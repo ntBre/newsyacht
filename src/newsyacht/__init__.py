@@ -337,9 +337,9 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
     for feed in feeds:
         headers = {"user-agent": f"newsyacht/{version('newsyacht')}"}
         if feed.etag:
-            headers["etag"] = feed.etag
+            headers["if-none-match"] = feed.etag
         if feed.last_modified:
-            headers["last-modified"] = feed.last_modified
+            headers["if-modified-since"] = feed.last_modified
 
         # this is the default, but set it explicitly to reuse in the log
         # message.
@@ -355,6 +355,10 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
                 timeout,
                 exc_info=False,
             )
+            continue
+
+        if response.status_code == httpx.codes.NOT_MODIFIED:
+            logger.info("feed `%s` was up to date", feed.url)
             continue
 
         items_per_feed = Counter()
