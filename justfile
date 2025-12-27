@@ -15,3 +15,5 @@ check: format lint
 
 format:
 	uv run -- ruff format
+
+all: format lint check test
