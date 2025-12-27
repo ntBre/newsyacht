@@ -4,8 +4,9 @@ from xml.etree import ElementTree
 
 import pytest
 
-from newsyacht import Color, Db, Feed, FeedId, Item, Score, Url
-from newsyacht.config import load_urls
+from newsyacht.config import Color, Url, load_urls
+from newsyacht.db import Db
+from newsyacht.models import Feed, FeedId, Item, Score
 from newsyacht.web import App
 
 
