@@ -129,11 +129,13 @@ class DbItem:
     def __getattr__(self, attr):
         if hasattr(self.inner, attr):
             return getattr(self.inner, attr)
-        return getattr(self, attr)
+        return object.__getattribute__(self, attr)
 
     @property
-    def day(self) -> str:
+    def day(self) -> str | None:
         "Return the date in the form YYYY-MM-DD instead of the full timestamp"
+        if self.date is None:
+            return None
         return self.date.strftime("%Y-%m-%d")
 
 
