@@ -12,6 +12,7 @@
 	  style="background-color:{{ post.color }}; color: {{ post.color | label_text_color }}"
 	  {% endif %}
 	  ><a href="/feed/{{ post.feed_id }}">{{ post.author }}</a></span>
+	{% if post.date %}
 	·
 	<time
 	  datetime="{{ post.date.isoformat() }}"
@@ -19,6 +20,7 @@
 	  >
 	  {{ post.day }}
 	</time>
+	{% endif %}
 	{% if post.comments %}
 	· <a href="{{post.comments}}">Comments</a>
 	{% endif %}

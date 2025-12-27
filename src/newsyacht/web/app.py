@@ -1,11 +1,12 @@
 import logging
+import re
 from operator import attrgetter
 from pathlib import Path
-import re
 
 from flask import Flask, redirect, render_template
-from newsyacht import Db, DbItem, FeedId
 
+from newsyacht.db import Db
+from newsyacht.models import DbItem, FeedId
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -19,9 +20,7 @@ def label_text_color(color: str) -> str:
     """
 
     if not (m := HEX_COLOR.fullmatch(color)):
-        logging.warning(
-            "Failed to parse %s as a hex color, falling back to #fff", color
-        )
+        logger.warning("Failed to parse %s as a hex color, falling back to #fff", color)
         return "#fff"
 
     digits = m[1]
@@ -37,7 +36,7 @@ def label_text_color(color: str) -> str:
 
     L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
 
-    # Tune threshold to taste. ~0.45–0.55 is a common range.
+    # Tune threshold to taste. ~0.45-0.55 is a common range.
     return "#111" if L > 0.5 else "#fff"
 
 

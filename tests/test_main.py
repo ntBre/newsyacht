@@ -3,7 +3,10 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 import pytest
-from newsyacht import Color, Db, Feed, FeedId, Item, Score, Url, load_urls
+
+from newsyacht.config import Color, Url, load_urls
+from newsyacht.db import Db
+from newsyacht.models import Feed, FeedId, Item, Score
 from newsyacht.web import App
 
 
@@ -47,7 +50,9 @@ def client(app):
     return app.app.test_client()
 
 
-@pytest.mark.parametrize("path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml"])
+@pytest.mark.parametrize(
+    "path", ["arch.xml", "atom.xml", "releases.xml", "hn.xml", "nodate.xml"]
+)
 def test_feed_from_xml(path, snapshot):
     base = Path("tests/fixtures")
     tree = ElementTree.parse(base / path)
@@ -69,11 +74,11 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
     db.insert_urls(hn_url)
     # append a second post with a higher score and test that it sorts
     # first
-    feed_id, score, item = hn_post[0]
+    feed_id, _score, item = hn_post[0]
     new_item = deepcopy(item)
     new_item.title = "Higher scoring post"
     new_item.guid = new_item.title
-    posts = hn_post + [(feed_id, Score(1.0), new_item)]
+    posts = [*hn_post, (feed_id, Score(1.0), new_item)]
     db.insert_items(posts)
 
     response = client.get("/")
@@ -84,4 +89,15 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
 @pytest.mark.parametrize("endpoint", ["/", "/feed/1"])
 def test_endpoint(snapshot, seeded_db, client, endpoint):
     response = client.get(endpoint)
+    assert snapshot == response.text
+
+
+def test_index_missing_date(snapshot, db, client):
+    url = "https://example.com/nodate.xml"
+    db.insert_urls([Url(link=url)])
+    feed_id = db.get_feeds([url])[0].id
+    tree = ElementTree.parse("tests/fixtures/nodate.xml")
+    feed = Feed._from_xml(tree)
+    db.insert_items([(FeedId(feed_id), Score(0.9), feed.items[0])])
+    response = client.get("/")
     assert snapshot == response.text

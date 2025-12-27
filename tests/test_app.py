@@ -1,5 +1,6 @@
-from newsyacht.web.app import label_text_color
 import pytest
+
+from newsyacht.web.app import label_text_color
 
 
 @pytest.mark.parametrize("color", ["#ff6600", "#d7ff64", "#ff0000", "orange"])
