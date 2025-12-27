@@ -7,14 +7,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
     <title>newsyacht</title>
   </head>
     <body>
+  	<div id="ptr">Pull to refresh…</div>
   	
   	<h2>Unread</h2>
   	<ul>
   	  
-  		
+  	  
   
   <li class="post">
     <div class="post-title">
@@ -61,6 +63,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
     <title>newsyacht</title>
   </head>
     <body>
@@ -132,14 +135,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
     <title>newsyacht</title>
   </head>
     <body>
+  	<div id="ptr">Pull to refresh…</div>
   	
   	<h2>Unread</h2>
   	<ul>
   	  
-  		
+  	  
   
   <li class="post">
     <div class="post-title">
@@ -169,7 +174,7 @@
   
   
   	  
-  		
+  	  
   
   <li class="post">
     <div class="post-title">
