@@ -10,8 +10,7 @@ accept:
 lint *args:
 	uv run -- ruff check {{args}}
 
-check: lint
-	uv run -- ruff format --check
+check: format lint
 	uv run -- ty check --no-progress
 
 format:
