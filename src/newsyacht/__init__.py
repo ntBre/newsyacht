@@ -239,7 +239,7 @@ class Feed:
             if item is not None:
                 if attr is None:
                     return item.text
-                return item.attrib[attr]
+                return item.attrib.get(attr)
             return None
 
         def author(element: Element[str]):
