@@ -5,7 +5,6 @@ import os
 import random
 import sqlite3
 from collections import Counter, defaultdict
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -19,21 +18,14 @@ from xml.etree.ElementTree import Element
 
 import httpx
 
-from .config import Color, Url, load_urls
+from newsyacht.config import Color, Url, load_urls
+from newsyacht.utils import then
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
 FeedId = NewType("FeedId", int)
 Score = NewType("Score", float)
-
-
-def then[T, U](x: T | None, f: Callable[[T], U]) -> U | None:
-    """If the optional value `x` is some, return the result of applying `f`,
-    else return `None`"""
-    if x is None:
-        return None
-    return f(x)
 
 
 @dataclass
