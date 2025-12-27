@@ -285,7 +285,7 @@ def load_urls(path) -> list[Url]:
     """
     Load a sequence of URLs from `path`, one per line.
 
-    Lines starting with `#` are ignored.
+    Lines starting with `#` and empty lines are ignored.
     """
 
     urls = []
@@ -293,7 +293,10 @@ def load_urls(path) -> list[Url]:
         if line.startswith("#"):
             continue
 
-        match line.strip().split():
+        if len(stripped := line.strip()) == 0:
+            continue
+
+        match stripped.split():
             case [url]:
                 urls.append(Url(url))
             case [url, color]:
