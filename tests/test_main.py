@@ -1,3 +1,5 @@
+import datetime
+import re
 from copy import deepcopy
 from pathlib import Path
 from xml.etree import ElementTree
@@ -101,3 +103,28 @@ def test_index_missing_date(snapshot, db, client):
     db.insert_items([(FeedId(feed_id), Score(0.9), feed.items[0])])
     response = client.get("/?all=1")
     assert snapshot == response.text
+
+
+def test_default_post_sorting(snapshot, db, hn_url, hn_post, client):
+    """
+    The other `/` tests pass `?all=1` to avoid filtering out old posts.
+    Here, we insert a new post with a generated date and test that it's shown
+    while the others are filtered out.
+    """
+    db.insert_urls(hn_url)
+    feed_id, score, item = hn_post[0]
+    new_item = deepcopy(item)
+    new_item.title = "Higher scoring post"
+    new_item.guid = new_item.title
+    new_item.date = datetime.datetime.now(datetime.UTC).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    posts = [*hn_post, (feed_id, score, new_item)]
+    db.insert_items(posts)
+
+    assert len(db.get_posts()) == 2
+
+    response = client.get("/")
+
+    response = re.sub(r"\d{4}-\d{2}-\d{2}", "<DATE>", response.text)
+    assert snapshot == response

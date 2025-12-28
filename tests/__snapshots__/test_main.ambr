@@ -1,4 +1,58 @@
 # serializer version: 1
+# name: test_default_post_sorting
+  '''
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
+    <title>newsyacht</title>
+  </head>
+    <body>
+  	<div id="ptr">Pull to refresh…</div>
+  	
+  	<h2>Unread</h2>
+  	<ul>
+  	  
+  	  
+  
+  <li class="post">
+    <div class="post-title">
+  	<a href="/read/2">Higher scoring post</a>
+    </div>
+  
+    <div class="post-meta">
+  	<span
+  	  class="post-author"
+  	  
+  	  style="background-color:#ff6600; color: #fff"
+  	  
+  	  ><a href="/feed/1">None</a></span>
+  	
+  	·
+  	<time
+  	  datetime="<DATE>T00:00:00+00:00"
+  	  title="<DATE> 00:00:00 UTC"
+  	  >
+  	  <DATE>
+  	</time>
+  	
+  	
+  	· <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
+  	
+  	· <a href="/mark-read/2">Mark Read</a>
+    </div>
+  </li>
+  
+  
+  	  
+  	</ul>
+    </body>
+  </html>
+  '''
+# ---
 # name: test_endpoint[/?all=1]
   '''
   <!DOCTYPE html>
