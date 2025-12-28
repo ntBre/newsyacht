@@ -58,14 +58,6 @@ class App:
                     if request.args.get("all")
                     else db.get_posts(days=3, read=False)
                 )
-                posts: list[DbItem] = sorted(
-                    (post for post in posts if post.link is not None),
-                    key=attrgetter("day", "score"),
-                    reverse=True,
-                )
-                for post in posts:
-                    if post.inner.author is None:
-                        post.inner.author = db.get_feed_title(post.feed_id)
             return render_template("index.html", posts=posts)
 
         @self.app.route("/feed/<int:feed_id>")

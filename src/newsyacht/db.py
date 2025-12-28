@@ -85,7 +85,8 @@ class Db:
             case False:
                 read_filter = "items.is_read = 0"
 
-        filters = [f for f in (date_filter, read_filter) if f]
+        link_filter = "items.link IS NOT NULL"
+        filters = [f for f in (link_filter, date_filter, read_filter) if f]
         filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
 
         cur = self.conn.execute(
@@ -98,7 +99,7 @@ class Db:
                 items.title,
                 items.content,
                 items.link,
-                items.author,
+                COALESCE(items.author, feeds.title) AS author,
                 items.comments,
                 items.date,
                 items.guid,
@@ -107,6 +108,7 @@ class Db:
             JOIN feeds
             ON feeds.id = items.feed_id
             {filter_clause}
+            ORDER BY substr(items.date, 1, 10) DESC, items.score DESC
             """
         )
 
