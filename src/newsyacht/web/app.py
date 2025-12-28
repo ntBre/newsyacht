@@ -1,12 +1,11 @@
 import logging
 import re
-from operator import attrgetter
 from pathlib import Path
 
 from flask import Flask, redirect, render_template, request
 
 from newsyacht.db import Db
-from newsyacht.models import DbItem, FeedId
+from newsyacht.models import FeedId
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -64,18 +63,7 @@ class App:
         def feed(feed_id):
             with Db(self.db) as db:
                 feed_title = db.get_feed_title(feed_id)
-                posts: list[DbItem] = sorted(
-                    (
-                        post
-                        for post in db.get_posts_by_id(FeedId(feed_id))
-                        if post.link is not None
-                    ),
-                    key=attrgetter("day", "score"),
-                    reverse=True,
-                )
-                for post in posts:
-                    if post.inner.author is None:
-                        post.inner.author = db.get_feed_title(post.feed_id)
+                posts = db.get_posts_by_id(FeedId(feed_id))
             posts = [post for post in posts if not post.is_read]
             return render_template("feed.html", posts=posts, feed_title=feed_title)
 

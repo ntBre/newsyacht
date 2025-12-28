@@ -86,7 +86,14 @@ class Db:
                 read_filter = "items.is_read = 0"
 
         link_filter = "items.link IS NOT NULL"
-        filters = [f for f in (link_filter, date_filter, read_filter) if f]
+
+        return self._get_posts(link_filter, date_filter, read_filter)
+
+    def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
+        return self._get_posts("items.feed_id = ?", params=(feed_id,))
+
+    def _get_posts(self, *filters, params=()):
+        filters = [f for f in filters if f]
         filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
 
         cur = self.conn.execute(
@@ -109,33 +116,8 @@ class Db:
             ON feeds.id = items.feed_id
             {filter_clause}
             ORDER BY substr(items.date, 1, 10) DESC, items.score DESC
-            """
-        )
-
-        return [DbItem.from_row(row) for row in cur.fetchall()]
-
-    def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
-        cur = self.conn.execute(
-            """
-            SELECT
-                items.id,
-                items.feed_id,
-                items.is_read,
-                items.score,
-                items.title,
-                items.content,
-                items.link,
-                items.author,
-                items.comments,
-                items.date,
-                items.guid,
-                feeds.color
-            FROM items
-            JOIN feeds
-            ON feeds.id = items.feed_id
-            WHERE items.feed_id = ?
             """,
-            (feed_id,),
+            params,
         )
 
         return [DbItem.from_row(row) for row in cur.fetchall()]
