@@ -15,5 +15,6 @@ check: format lint
 
 format:
 	uv run -- ruff format
+	prettier src/newsyacht/web/static -w
 
 all: format lint check test
