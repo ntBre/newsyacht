@@ -56,9 +56,40 @@ class Db:
             """
         )
 
-    def get_posts(self) -> list[DbItem]:
+    def get_posts(
+        self, days: int | None = None, read: bool | None = None
+    ) -> list[DbItem]:
+        """
+        Get posts from the database, optionally filtered by `days` and `read`.
+
+        `days` controls the number of previous days to consider, while `read`
+        determines whether posts that have already been marked read are
+        included. When both of these are `None`, all posts are included.
+
+        TODO(brent) `read` should probably be an enum with three variants:
+        - `True` means return only read posts
+        - `False` means return only unread posts
+        - `None` means return both read and unread posts
+        """
+        date_filter = (
+            f"datetime(items.date) >= datetime('now', '-{days} day')"
+            if days is not None
+            else ""
+        )
+
+        match read:
+            case None:
+                read_filter = ""
+            case True:
+                read_filter = "items.is_read = 1"
+            case False:
+                read_filter = "items.is_read = 0"
+
+        filters = [f for f in (date_filter, read_filter) if f]
+        filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+
         cur = self.conn.execute(
-            """
+            f"""
             SELECT
                 items.id,
                 items.feed_id,
@@ -75,6 +106,7 @@ class Db:
             FROM items
             JOIN feeds
             ON feeds.id = items.feed_id
+            {filter_clause}
             """
         )
 

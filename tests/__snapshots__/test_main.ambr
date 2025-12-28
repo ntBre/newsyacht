@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_endpoint[/]
+# name: test_endpoint[/?all=1]
   '''
   <!DOCTYPE html>
   <html lang="en">
@@ -47,10 +47,6 @@
   </li>
   
   
-  	  
-  	</ul>
-  	<h2>Read</h2>
-  	<ul>
   	  
   	</ul>
     </body>
@@ -163,10 +159,6 @@
   
   	  
   	</ul>
-  	<h2>Read</h2>
-  	<ul>
-  	  
-  	</ul>
     </body>
   </html>
   '''
@@ -260,10 +252,6 @@
   </li>
   
   
-  	  
-  	</ul>
-  	<h2>Read</h2>
-  	<ul>
   	  
   	</ul>
     </body>

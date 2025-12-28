@@ -6,22 +6,8 @@
 	{% import "posts.html" as p %}
 	<h2>Unread</h2>
 	<ul>
-	  {% for post in unread_posts %}
+	  {% for post in posts %}
 	  {{ p.render_post(post) }}
-	  {% endfor %}
-	</ul>
-	<h2>Read</h2>
-	<ul>
-	  {% for post in read_posts %}
-	  <li class="post">
-		<div class="post-title">
-		  <a href="/read/{{ post.id }}">{{ post.title }}</a>
-		</div>
-
-		<div class="post-meta">
-          {{ post.author }} · {{ post.date.strftime("%Y-%m-%d") }}
-		</div>
-	  </li>
 	  {% endfor %}
 	</ul>
   </body>
