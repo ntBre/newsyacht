@@ -11,7 +11,7 @@ lint *args:
 	uv run -- ruff check {{args}}
 
 isort:
-	uv run -- ruff check --select I --fix
+	uv run -- ruff check --select I,F401 --fix
 
 check: isort format lint
 	uv run -- ty check --no-progress
