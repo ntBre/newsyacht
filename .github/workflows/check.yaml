@@ -24,6 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt install prettier
+
+      - name: Check non-Python formatting
+        run: |
+          prettier --check src/newsyacht/web/static
+
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v6
 
