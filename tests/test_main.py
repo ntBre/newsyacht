@@ -88,7 +88,7 @@ def test_ranked_index(snapshot, db, hn_url, hn_post, client):
     assert snapshot == response.text
 
 
-@pytest.mark.parametrize("endpoint", ["/?all=1", "/feed/1"])
+@pytest.mark.parametrize("endpoint", ["/?all=1", "/feed/1", "/archive"])
 def test_endpoint(snapshot, seeded_db, client, endpoint):
     response = client.get(endpoint)
     assert snapshot == response.text
