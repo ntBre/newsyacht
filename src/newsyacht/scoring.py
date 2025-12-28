@@ -67,8 +67,7 @@ class Model:
         self, tokens: Iterator[str], *, alpha: float = 1.0, beta: float = 1.0
     ) -> float:
         """
-        Returns log P(UP|x) - log P(DOWN|x).
-        Positive => prefer upvote, negative => prefer downvote.
+        Returns the model's score in [0, 1] for `tokens`.
         """
         V = max(self.vocabulary_size, 1)
 
