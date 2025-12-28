@@ -2,6 +2,8 @@
 <html lang="en">
   {% include "head.html" %}
   <body>
+	{% include "nav.html" %}
+	<div id="ptr">Pull to refresh…</div>
 	{% import "posts.html" as p %}
 	<h2>{{ feed_title }}</h2>
 	<ul>
