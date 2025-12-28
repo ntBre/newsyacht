@@ -11,6 +11,12 @@
     <title>newsyacht</title>
   </head>
     <body>
+  	<div class="navigation">
+    <ul>
+  	<li class=nav><a class=nav href="/">Home</a></li>
+  	<li class=nav><a class=nav href="/archive">Read</a></li>
+    </ul>
+  </div>
   	<div id="ptr">Pull to refresh…</div>
   	
   	<h2>Unread</h2>
@@ -42,7 +48,9 @@
   	
   	· <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
   	
+  	
   	· <a href="/mark-read/1">Mark Read</a>
+  	
     </div>
   </li>
   

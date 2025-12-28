@@ -59,6 +59,18 @@ class App:
                 )
             return render_template("index.html", posts=posts)
 
+        @self.app.route("/archive")
+        def archive():
+            """
+            Return all previously read posts
+
+            I probably would have called this `/read` if that weren't already
+            taken.
+            """
+            with Db(self.db) as db:
+                posts = db.get_posts(read=True)
+            return render_template("archive.html", posts=posts)
+
         @self.app.route("/feed/<int:feed_id>")
         def feed(feed_id):
             with Db(self.db) as db:

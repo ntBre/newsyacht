@@ -39,3 +39,23 @@ body {
 	-webkit-backdrop-filter: blur(10px);
 	backdrop-filter: blur(10px);
 }
+
+div.navigation {
+  float: none;
+}
+
+div.navigation {
+  height: 25px;
+}
+
+div.navigation ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+div.navigation ul li {
+  display: inline;
+  margin: 0 2px;
+  padding: 0;
+}
