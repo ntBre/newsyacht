@@ -1,6 +1,6 @@
 import math
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -29,7 +29,7 @@ class Model:
     down_total_tokens: int
     "The total number of tokens in downvoted documents."
 
-    tokens: dict[str, Token]
+    tokens: defaultdict[str, Token]
 
     @classmethod
     def from_db(cls, db_path):
@@ -38,6 +38,7 @@ class Model:
                 """
                 SELECT up_docs, down_docs, up_total_tokens, down_total_tokens
                 FROM model
+                WHERE id = 1
                 """,
             ).fetchone()
             tokens = db.conn.execute(
@@ -48,10 +49,13 @@ class Model:
             )
             return cls(
                 db=db_path,
-                tokens={
-                    token["text"]: Token(up=token["up"], down=token["down"])
-                    for token in tokens
-                },
+                tokens=defaultdict(
+                    Token,
+                    {
+                        token["text"]: Token(up=token["up"], down=token["down"])
+                        for token in tokens
+                    },
+                ),
                 **model,
             )
 
@@ -91,8 +95,59 @@ class Model:
         return sigmoid(score)
 
     def add_item(self, document: str, vote: Vote):
-        for token in tokenize(document):
-            ...
+        counts = Counter(tokenize(document))
+        new_tokens = sum(counts.values())
+        # The handling of `updated` here was originally a typo (I meant for it
+        # to track the total, not the delta), but GPT "strongly recommended"
+        # handling them as deltas and applying them in SQL. I'm not really sure
+        # if its concerns about updating the DB in another process or
+        # forgetting to load tokens are applicable here, but it sounded
+        # reasonable anyway. Thus, `updated` is the delta from this item, and
+        # the SQL below adds the results from `updated` to the values already
+        # in the DB.
+        updated = defaultdict(Token)
+        for text, count in counts.items():
+            match vote:
+                case Vote.UP:
+                    self.tokens[text].up += count
+                    updated[text].up += count
+                case Vote.DOWN:
+                    self.tokens[text].down += count
+                    updated[text].down += count
+
+        match vote:
+            case Vote.UP:
+                self.up_docs += 1
+                self.up_total_tokens += new_tokens
+            case Vote.DOWN:
+                self.down_docs += 1
+                self.down_total_tokens += new_tokens
+
+        with Db(self.db) as db, db.conn:
+            db.conn.execute(
+                """
+                UPDATE model
+                SET up_docs = ?, down_docs = ?, up_total_tokens = ?, down_total_tokens = ?
+                WHERE id = 1
+                """,
+                (
+                    self.up_docs,
+                    self.down_docs,
+                    self.up_total_tokens,
+                    self.down_total_tokens,
+                ),
+            )
+
+            db.conn.executemany(
+                """
+                INSERT INTO model_tokens (text, up, down)
+                VALUES (?, ?, ?)
+                ON CONFLICT(text) DO UPDATE SET
+                    up = up + excluded.up,
+                    down = down + excluded.down
+                """,
+                [(text, token.up, token.down) for text, token in updated.items()],
+            )
 
 
 @dataclass
