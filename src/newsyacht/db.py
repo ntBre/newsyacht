@@ -23,39 +23,72 @@ class Db:
     def _setup_connection(self):
         self.conn.row_factory = sqlite3.Row
 
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS feeds (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                url TEXT NOT NULL UNIQUE,
-                color TEXT,
-                title TEXT,
-                description TEXT,
-                etag TEXT,
-                last_modified TEXT
+        with self.conn:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feeds (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT NOT NULL UNIQUE,
+                    color TEXT,
+                    title TEXT,
+                    description TEXT,
+                    etag TEXT,
+                    last_modified TEXT
+                )
+                """
             )
-            """
-        )
 
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS items (
-                id            INTEGER PRIMARY KEY,
-                feed_id       INTEGER NOT NULL REFERENCES feeds(id),
-                is_read       INTEGER NOT NULL DEFAULT 0,
-                score         REAL NOT NULL DEFAULT 0.0,
-                title         TEXT,
-                content       TEXT,
-                link          TEXT,
-                author        TEXT,
-                comments      TEXT,
-                thumbnail     TEXT,
-                date          TEXT,
-                guid          TEXT NOT NULL,
-                UNIQUE(feed_id, guid)
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS items (
+                    id            INTEGER PRIMARY KEY,
+                    feed_id       INTEGER NOT NULL REFERENCES feeds(id),
+                    is_read       INTEGER NOT NULL DEFAULT 0,
+                    score         REAL NOT NULL DEFAULT 0.0,
+                    title         TEXT,
+                    content       TEXT,
+                    link          TEXT,
+                    author        TEXT,
+                    comments      TEXT,
+                    thumbnail     TEXT,
+                    date          TEXT,
+                    guid          TEXT NOT NULL,
+                    UNIQUE(feed_id, guid)
+                )
+                """
             )
-            """
-        )
+
+            # Initialize the scoring model with zeros if it doesn't exist
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS model (
+                    id                  INTEGER PRIMARY KEY CHECK (id = 1),
+                    up_docs             INTEGER NOT NULL,
+                    down_docs           INTEGER NOT NULL,
+                    up_total_tokens     INTEGER NOT NULL,
+                    down_total_tokens   INTEGER NOT NULL
+                )
+                """
+            )
+
+            self.conn.execute(
+                """
+                INSERT OR IGNORE INTO model (
+                id, up_docs, down_docs, up_total_tokens, down_total_tokens
+                )
+                VALUES (1, 0, 0, 0, 0)
+                """
+            )
+
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS model_tokens (
+                    text                TEXT PRIMARY KEY,
+                    up                  INTEGER NOT NULL,
+                    down                INTEGER NOT NULL
+                )
+                """
+            )
 
     def get_posts(
         self, days: int | None = None, read: bool | None = None
