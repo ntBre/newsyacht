@@ -1,0 +1,43 @@
+# serializer version: 1
+# name: test_index_missing_date
+  '''
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
+    <title>newsyacht</title>
+  </head>
+    <body>
+  	<div id="ptr">Pull to refresh…</div>
+  	
+  	<h2>Unread</h2>
+  	<ul>
+  	  
+  	  
+  
+  <li class="post">
+    <div class="post-title">
+  	<a href="/read/1">waydroid &gt;= 1.5.4-3 update may require manual intervention</a>
+    </div>
+  
+    <div class="post-meta">
+  	<span
+  	  class="post-author"
+  	  
+  	  ><a href="/feed/1">None</a></span>
+  	
+  	
+  	· <a href="/mark-read/1">Mark Read</a>
+    </div>
+  </li>
+  
+  
+  	  
+  	</ul>
+    </body>
+  </html>
+  '''
+# ---

@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_feed_from_xml[nodate.xml]
+  Feed(title='Arch Linux: Recent news updates', link='https://archlinux.org/news/', description='The latest and greatest news from the Arch Linux distribution.', items=[Item(title='waydroid >= 1.5.4-3 update may require manual intervention', content='The description', link='https://archlinux.org/news/waydroid-154-3-update-may-require-manual-intervention/', author=None, comments=None, date=None, guid='tag:archlinux.org,2025-11-06:/news/waydroid-154-3-update-may-require-manual-intervention/')])
+# ---
