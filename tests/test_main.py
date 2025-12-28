@@ -9,7 +9,7 @@ import pytest
 from newsyacht.config import Color, Url, load_urls
 from newsyacht.db import Db
 from newsyacht.models import Feed, FeedId, Item, Score
-from newsyacht.scoring import tokenize
+from newsyacht.scoring import Model, tokenize
 from newsyacht.web import App
 
 
@@ -168,3 +168,9 @@ def test_tokenize_arch(snapshot, arch_db: Db):
         posts.append(list(tokenize(text)))
 
     assert snapshot == posts
+
+
+def test_default_model(snapshot, db):
+    model = Model.from_db(db.path)
+    model.db = "<path>"
+    assert snapshot == model
