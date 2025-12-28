@@ -1,0 +1,63 @@
+# serializer version: 1
+# name: test_endpoint[all=1]
+  '''
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
+    <title>newsyacht</title>
+  </head>
+    <body>
+  	<div class="navigation">
+    <ul>
+  	<li class=nav><a class=nav href="/">Home</a></li>
+  	<li class=nav><a class=nav href="/archive">Read</a></li>
+    </ul>
+  </div>
+  	<div id="ptr">Pull to refresh…</div>
+  	
+  	<h2>Unread</h2>
+  	<ul>
+  	  
+  	  
+  
+  <li class="post">
+    <div class="post-title">
+  	<a href="/read/1">Linux Sandboxes and Fil-C</a>
+    </div>
+  
+    <div class="post-meta">
+  	<span
+  	  class="post-author"
+  	  
+  	  style="background-color:#ff6600; color: #fff"
+  	  
+  	  ><a href="/feed/1">None</a></span>
+  	
+  	·
+  	<time
+  	  datetime="2025-12-13T22:58:29+00:00"
+  	  title="2025-12-13 22:58:29 UTC"
+  	  >
+  	  2025-12-13
+  	</time>
+  	
+  	
+  	· <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
+  	
+  	
+  	· <a href="/mark-read/1">Mark Read</a>
+  	
+    </div>
+  </li>
+  
+  
+  	  
+  	</ul>
+    </body>
+  </html>
+  '''
+# ---

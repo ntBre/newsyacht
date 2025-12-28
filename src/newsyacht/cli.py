@@ -51,11 +51,11 @@ class App:
                 for post in posts:
                     print(f"\t{post}")
 
-    def serve(self, _args):
+    def serve(self, args):
         from newsyacht.web import App
 
         app = App(self.config_dir / "cache.db")
-        app.run("0.0.0.0", use_reloader=False)
+        app.run("0.0.0.0", port=args.port, use_reloader=False)
 
 
 def initial_score(count: int) -> float:
@@ -155,6 +155,7 @@ def main() -> None:
     list_.set_defaults(func=app.list_)
 
     serve = subparsers.add_parser("serve", description="Serve the web interface")
+    serve.add_argument("-p", "--port", type=int, default=5000)
     serve.set_defaults(func=app.serve)
 
     args = parser.parse_args()

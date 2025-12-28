@@ -1,0 +1,29 @@
+# serializer version: 1
+# name: test_endpoint[archive]
+  '''
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <script defer src="/static/pull_to_refresh.js"></script>
+    <title>newsyacht</title>
+  </head>
+    <body>
+  	<div class="navigation">
+    <ul>
+  	<li class=nav><a class=nav href="/">Home</a></li>
+  	<li class=nav><a class=nav href="/archive">Read</a></li>
+    </ul>
+  </div>
+  	<div id="ptr">Pull to refresh…</div>
+  	
+  	<h2>Read</h2>
+  	<ul>
+  	  
+  	</ul>
+    </body>
+  </html>
+  '''
+# ---

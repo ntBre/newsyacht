@@ -2,7 +2,7 @@ run *args:
 	uv run -- newsyacht {{args}}
 
 test *args:
-	uv run -- pytest tests {{args}}
+	uv run -- pytest tests -vv {{args}}
 
 accept:
 	uv run -- pytest tests --snapshot-update
@@ -15,5 +15,6 @@ check: format lint
 
 format:
 	uv run -- ruff format
+	prettier src/newsyacht/web/static -w
 
 all: format lint check test

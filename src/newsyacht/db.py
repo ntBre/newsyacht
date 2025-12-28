@@ -56,33 +56,48 @@ class Db:
             """
         )
 
-    def get_posts(self) -> list[DbItem]:
-        cur = self.conn.execute(
-            """
-            SELECT
-                items.id,
-                items.feed_id,
-                items.is_read,
-                items.score,
-                items.title,
-                items.content,
-                items.link,
-                items.author,
-                items.comments,
-                items.date,
-                items.guid,
-                feeds.color
-            FROM items
-            JOIN feeds
-            ON feeds.id = items.feed_id
-            """
+    def get_posts(
+        self, days: int | None = None, read: bool | None = None
+    ) -> list[DbItem]:
+        """
+        Get posts from the database, optionally filtered by `days` and `read`.
+
+        `days` controls the number of previous days to consider, while `read`
+        determines whether posts that have already been marked read are
+        included. When both of these are `None`, all posts are included.
+
+        TODO(brent) `read` should probably be an enum with three variants:
+        - `True` means return only read posts
+        - `False` means return only unread posts
+        - `None` means return both read and unread posts
+        """
+        date_filter = (
+            f"datetime(items.date) >= datetime('now', '-{days} day')"
+            if days is not None
+            else ""
         )
 
-        return [DbItem.from_row(row) for row in cur.fetchall()]
+        match read:
+            case None:
+                read_filter = ""
+            case True:
+                read_filter = "items.is_read = 1"
+            case False:
+                read_filter = "items.is_read = 0"
+
+        link_filter = "items.link IS NOT NULL"
+
+        return self._get_posts(link_filter, date_filter, read_filter)
 
     def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
+        return self._get_posts("items.feed_id = ?", params=(feed_id,))
+
+    def _get_posts(self, *filters, params=()):
+        filters = [f for f in filters if f]
+        filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+
         cur = self.conn.execute(
-            """
+            f"""
             SELECT
                 items.id,
                 items.feed_id,
@@ -91,7 +106,7 @@ class Db:
                 items.title,
                 items.content,
                 items.link,
-                items.author,
+                COALESCE(items.author, feeds.title) AS author,
                 items.comments,
                 items.date,
                 items.guid,
@@ -99,9 +114,10 @@ class Db:
             FROM items
             JOIN feeds
             ON feeds.id = items.feed_id
-            WHERE items.feed_id = ?
+            {filter_clause}
+            ORDER BY substr(items.date, 1, 10) DESC, items.score DESC
             """,
-            (feed_id,),
+            params,
         )
 
         return [DbItem.from_row(row) for row in cur.fetchall()]

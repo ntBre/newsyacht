@@ -1,0 +1,7 @@
+# serializer version: 1
+# name: test_load_urls
+  list([
+    Url(link='https://www.archlinux.org/feeds/news', color=None),
+    Url(link='https://news.ycombinator.com/rss', color='#ff6600'),
+  ])
+# ---

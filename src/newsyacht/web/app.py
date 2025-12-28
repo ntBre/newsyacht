@@ -1,12 +1,11 @@
 import logging
 import re
-from operator import attrgetter
 from pathlib import Path
 
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, request
 
 from newsyacht.db import Db
-from newsyacht.models import DbItem, FeedId
+from newsyacht.models import FeedId
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -53,36 +52,30 @@ class App:
         @self.app.route("/")
         def index():
             with Db(self.db) as db:
-                posts: list[DbItem] = sorted(
-                    (post for post in db.get_posts() if post.link is not None),
-                    key=attrgetter("day", "score"),
-                    reverse=True,
+                posts = (
+                    db.get_posts()
+                    if request.args.get("all")
+                    else db.get_posts(days=3, read=False)
                 )
-                for post in posts:
-                    if post.inner.author is None:
-                        post.inner.author = db.get_feed_title(post.feed_id)
-            unread_posts = [post for post in posts if not post.is_read]
-            read_posts = [post for post in posts if post.is_read]
-            return render_template(
-                "index.html", unread_posts=unread_posts, read_posts=read_posts
-            )
+            return render_template("index.html", posts=posts)
+
+        @self.app.route("/archive")
+        def archive():
+            """
+            Return all previously read posts
+
+            I probably would have called this `/read` if that weren't already
+            taken.
+            """
+            with Db(self.db) as db:
+                posts = db.get_posts(read=True)
+            return render_template("archive.html", posts=posts)
 
         @self.app.route("/feed/<int:feed_id>")
         def feed(feed_id):
             with Db(self.db) as db:
                 feed_title = db.get_feed_title(feed_id)
-                posts: list[DbItem] = sorted(
-                    (
-                        post
-                        for post in db.get_posts_by_id(FeedId(feed_id))
-                        if post.link is not None
-                    ),
-                    key=attrgetter("day", "score"),
-                    reverse=True,
-                )
-                for post in posts:
-                    if post.inner.author is None:
-                        post.inner.author = db.get_feed_title(post.feed_id)
+                posts = db.get_posts_by_id(FeedId(feed_id))
             posts = [post for post in posts if not post.is_read]
             return render_template("feed.html", posts=posts, feed_title=feed_title)
 

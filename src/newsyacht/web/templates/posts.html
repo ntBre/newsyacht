@@ -24,7 +24,9 @@
 	{% if post.comments %}
 	· <a href="{{post.comments}}">Comments</a>
 	{% endif %}
+	{% if not post.is_read %}
 	· <a href="/mark-read/{{ post.id }}">Mark Read</a>
+	{% endif %}
   </div>
 </li>
 
