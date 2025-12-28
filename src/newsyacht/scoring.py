@@ -1,8 +1,9 @@
 import math
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from enum import Enum, auto
 from pathlib import Path
 
 from newsyacht.db import Db
@@ -28,16 +29,7 @@ class Model:
     down_total_tokens: int
     "The total number of tokens in downvoted documents."
 
-    tokens: list[Token]
-
-    _tokens: dict[str, Token] = field(init=False)
-
-    def __post_init__(self):
-        self._tokens = defaultdict(Token)
-        for token in self.tokens:
-            self._tokens[token.text].text = token.text
-            self._tokens[token.text].up += token.up
-            self._tokens[token.text].down += token.down
+    tokens: dict[str, Token]
 
     @classmethod
     def from_db(cls, db_path):
@@ -54,11 +46,18 @@ class Model:
                 FROM model_tokens
                 """
             )
-            return cls(db=db_path, tokens=[Token(**token) for token in tokens], **model)
+            return cls(
+                db=db_path,
+                tokens={
+                    token["text"]: Token(up=token["up"], down=token["down"])
+                    for token in tokens
+                },
+                **model,
+            )
 
     @property
     def vocabulary_size(self):
-        return len(self._tokens)
+        return len(self.tokens)
 
     def score(
         self, tokens: Iterator[str], *, alpha: float = 1.0, beta: float = 1.0
@@ -78,7 +77,7 @@ class Model:
         # Add token contributions
         tokens: Counter[str] = Counter(tokens)
         for text, count in tokens.items():
-            if token := self._tokens.get(text):
+            if token := self.tokens.get(text):
                 up, down = token.up, token.down
             else:
                 up, down = 0, 0
@@ -91,6 +90,10 @@ class Model:
 
         return sigmoid(score)
 
+    def add_item(self, document: str, vote: Vote):
+        for token in tokenize(document):
+            ...
+
 
 @dataclass
 class Token:
@@ -100,9 +103,13 @@ class Token:
     `up` is the number of times this token appears in upvoted documents.
     """
 
-    text: str = ""
     up: int = 0
     down: int = 0
+
+
+class Vote(Enum):
+    UP = auto()
+    DOWN = auto()
 
 
 def tokenize(text: str) -> Iterator[str]:
