@@ -129,3 +129,12 @@ def test_default_post_sorting(snapshot, db, hn_url, hn_post, client):
 
     response = re.sub(r"\d{4}-\d{2}-\d{2}", "<DATE>", response.text)
     assert snapshot == response
+
+
+def test_thumbnail(snapshot, seeded_db: Db, client):
+    tree = ElementTree.parse("tests/fixtures/reddit.xml")
+    feed = Feed._from_xml(tree)
+    seeded_db.insert_items([(FeedId(1), Score(1.0), feed.items[0])])
+
+    response = client.get("/?all=1")
+    assert snapshot == response.text

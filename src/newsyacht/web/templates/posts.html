@@ -27,6 +27,9 @@
 	{% if not post.is_read %}
 	· <a href="/mark-read/{{ post.id }}">Mark Read</a>
 	{% endif %}
+	{% if post.thumbnail %}
+	<img src="{{ post.thumbnail }}">
+	{% endif %}
   </div>
 </li>
 

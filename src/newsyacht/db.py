@@ -173,8 +173,19 @@ class Db:
         with self.conn:
             self.conn.executemany(
                 """
-                INSERT INTO items (feed_id, guid, title, content, link, author, date, comments, score)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO items (
+                    feed_id,
+                    guid,
+                    title,
+                    content,
+                    link,
+                    author,
+                    date,
+                    comments,
+                    thumbnail,
+                    score
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(feed_id, guid) DO UPDATE SET
                     title = excluded.title,
                     content = excluded.content,
@@ -182,6 +193,7 @@ class Db:
                     author = excluded.author,
                     date = excluded.date,
                     comments = excluded.comments,
+                    thumbnail = excluded.thumbnail,
                     score = excluded.score
                 """,
                 [
@@ -194,6 +206,7 @@ class Db:
                         item.author,
                         item.date_str(),
                         item.comments,
+                        item.thumbnail,
                         score,
                     )
                     for feed_id, score, item in items
