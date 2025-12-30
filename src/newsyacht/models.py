@@ -253,7 +253,7 @@ class Feed:
                 content=find(item, "content"),
                 author=author(item),
                 comments=find(item, "comments"),
-                thumbnail=thumbnail(item),
+                thumbnail=find(item, "thumbnail", "url") or thumbnail(item),
                 _raw_date=find(item, "published") or find(item, "updated"),
                 _raw_guid=find(item, "id"),
             )
