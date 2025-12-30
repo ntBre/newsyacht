@@ -49,6 +49,7 @@ class Db:
                 link          TEXT,
                 author        TEXT,
                 comments      TEXT,
+                thumbnail     TEXT,
                 date          TEXT,
                 guid          TEXT NOT NULL,
                 UNIQUE(feed_id, guid)
@@ -106,6 +107,7 @@ class Db:
                 items.title,
                 items.content,
                 items.link,
+                items.thumbnail,
                 COALESCE(items.author, feeds.title) AS author,
                 items.comments,
                 items.date,

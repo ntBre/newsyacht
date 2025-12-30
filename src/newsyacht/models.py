@@ -31,6 +31,9 @@ class Item:
     comments: str | None
     "An optional link to a comments page"
 
+    thumbnail: str | None
+    "An optional link to a thumbnail"
+
     date: datetime | None = field(init=False)
 
     _raw_date: str | None = field(repr=False)
@@ -101,6 +104,7 @@ class DbItem:
                 link=row["link"],
                 author=row["author"],
                 comments=row["comments"],
+                thumbnail=row["thumbnail"],
                 _raw_date=row["date"],
                 _raw_guid=row["guid"],
             ),
@@ -192,6 +196,8 @@ class Feed:
                     content=get(item, "description"),
                     author=get(item, "dc:creator"),
                     comments=get(item, "comments"),
+                    # TODO(brent) does rss ever have thumbnails?
+                    thumbnail=None,
                     _raw_date=iso_date,
                     _raw_guid=get(item, "guid"),
                 )
@@ -233,6 +239,13 @@ class Feed:
 
             return name.text
 
+        def thumbnail(element: Element[str]):
+            media = get(element, "group")
+            if media is None:
+                return None
+
+            return find(media, "thumbnail", "url")
+
         items = [
             Item(
                 title=find(item, "title"),
@@ -240,6 +253,7 @@ class Feed:
                 content=find(item, "content"),
                 author=author(item),
                 comments=find(item, "comments"),
+                thumbnail=thumbnail(item),
                 _raw_date=find(item, "published") or find(item, "updated"),
                 _raw_guid=find(item, "id"),
             )
