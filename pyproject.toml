@@ -31,6 +31,7 @@ dev = [
 [tool.ruff.lint]
 preview = true
 extend-select = [
+    "C4",
     "DTZ",
     "EM",
     "G",

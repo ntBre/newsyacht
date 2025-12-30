@@ -25,19 +25,25 @@
   	  
   
   <li class="post">
-    <div class="post-title">
-  	<a href="/read/1">waydroid &gt;= 1.5.4-3 update may require manual intervention</a>
-    </div>
+    <div class="post-body">
+  	<div class="post-text">
+  	  <div class="post-title">
+  		<a href="/read/1">waydroid &gt;= 1.5.4-3 update may require manual intervention</a>
+  	  </div>
   
-    <div class="post-meta">
-  	<span
-  	  class="post-author"
-  	  
-  	  ><a href="/feed/1">None</a></span>
-  	
-  	
-  	
-  	· <a href="/mark-read/1">Mark Read</a>
+  	  <div class="post-meta">
+  		<span
+  		  class="post-author"
+  		  
+  		  ><a href="/feed/1">None</a></span>
+  		
+  		
+  		
+  		· <a href="/mark-read/1">Mark Read</a>
+  		
+  	  </div>
+  	</div>
+  
   	
     </div>
   </li>
