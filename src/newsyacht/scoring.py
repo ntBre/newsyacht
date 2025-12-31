@@ -69,13 +69,13 @@ class Model:
         """
         Returns the model's score in [0, 1] for `tokens`.
         """
-        V = max(self.vocabulary_size, 1)
+        vocabulary_size = max(self.vocabulary_size, 1)
 
         # Prior log-odds
         score = math.log((self.up_docs + beta) / (self.down_docs + beta))
 
-        up_denom = self.up_total_tokens + alpha * V
-        down_denom = self.down_total_tokens + alpha * V
+        up_denom = self.up_total_tokens + alpha * vocabulary_size
+        down_denom = self.down_total_tokens + alpha * vocabulary_size
 
         # Add token contributions
         tokens: Counter[str] = Counter(tokens)

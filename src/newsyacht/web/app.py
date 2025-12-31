@@ -33,10 +33,10 @@ def label_text_color(color: str) -> str:
         x = c / 255.0
         return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
 
-    L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
 
     # Tune threshold to taste. ~0.45-0.55 is a common range.
-    return "#111" if L > 0.5 else "#fff"
+    return "#111" if luminance > 0.5 else "#fff"
 
 
 class App:
