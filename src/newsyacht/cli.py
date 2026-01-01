@@ -25,7 +25,7 @@ class App:
         return load_urls(self.config_dir / "urls")
 
     def update(self, _args):
-        with Db(self.config_dir / "cache.db") as db:
+        with Db(self.db_path) as db:
             urls = self.load_urls()
             db.insert_urls(urls)
 
@@ -38,7 +38,7 @@ class App:
             db.insert_items(items)
 
     def list_(self, _args):
-        with Db(self.config_dir / "cache.db") as db:
+        with Db(self.db_path) as db:
             posts = db.get_posts()
 
             grouped_posts = defaultdict(list)
@@ -54,9 +54,12 @@ class App:
     def serve(self, args):
         from newsyacht.web import App
 
-        app = App(self.config_dir / "cache.db")
+        app = App(self.db_path)
         app.run("0.0.0.0", port=args.port, use_reloader=False)
 
+    @property
+    def db_path(self):
+        return self.config_dir / "cache.db"
 
 def initial_score(count: int) -> float:
     """
