@@ -4,7 +4,6 @@ from collections import Counter, defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum, auto
-from pathlib import Path
 
 from newsyacht.db import Db
 
@@ -15,8 +14,6 @@ TOKEN_RE = re.compile(r"[A-Za-z0-9-$']+")
 
 @dataclass
 class Model:
-    db: Path
-
     up_docs: int
     "The number of documents with upvotes."
 
@@ -32,32 +29,30 @@ class Model:
     tokens: defaultdict[str, Token]
 
     @classmethod
-    def from_db(cls, db_path):
-        with Db(db_path) as db:
-            model = db.conn.execute(
-                """
+    def from_db(cls, db):
+        model = db.conn.execute(
+            """
                 SELECT up_docs, down_docs, up_total_tokens, down_total_tokens
                 FROM model
                 WHERE id = 1
                 """,
-            ).fetchone()
-            tokens = db.conn.execute(
-                """
+        ).fetchone()
+        tokens = db.conn.execute(
+            """
                 SELECT text, up, down
                 FROM model_tokens
                 """
-            )
-            return cls(
-                db=db_path,
-                tokens=defaultdict(
-                    Token,
-                    {
-                        token["text"]: Token(up=token["up"], down=token["down"])
-                        for token in tokens
-                    },
-                ),
-                **model,
-            )
+        )
+        return cls(
+            tokens=defaultdict(
+                Token,
+                {
+                    token["text"]: Token(up=token["up"], down=token["down"])
+                    for token in tokens
+                },
+            ),
+            **model,
+        )
 
     @property
     def vocabulary_size(self):
@@ -93,7 +88,7 @@ class Model:
 
         return sigmoid(score)
 
-    def add_item(self, document: str, vote: Vote):
+    def add_item(self, db: Db, document: str, vote: Vote):
         counts = Counter(tokenize(document))
         new_tokens = sum(counts.values())
         # The handling of `updated` here was originally a typo (I meant for it
@@ -122,7 +117,7 @@ class Model:
                 self.down_docs += 1
                 self.down_total_tokens += new_tokens
 
-        with Db(self.db) as db, db.conn:
+        with db.conn:
             db.conn.execute(
                 """
                 UPDATE model

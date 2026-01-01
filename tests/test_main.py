@@ -171,6 +171,5 @@ def test_tokenize_arch(snapshot, arch_db: Db):
 
 
 def test_default_model(snapshot, db):
-    model = Model.from_db(db.path)
-    model.db = "<path>"
+    model = Model.from_db(db)
     assert snapshot == model
