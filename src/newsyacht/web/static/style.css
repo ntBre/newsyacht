@@ -3,6 +3,12 @@ body {
   line-height: 1.5;
 }
 
+.post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .post {
   list-style: none;
   position: relative;

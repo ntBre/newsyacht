@@ -20,7 +20,7 @@
   	<div id="ptr">Pull to refresh…</div>
   	
   	<h2>Unread</h2>
-  	<ul>
+  	<ul class="post-list">
   	  
   	  
   
