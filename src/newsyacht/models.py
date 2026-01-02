@@ -2,6 +2,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from enum import Enum
 from hashlib import sha256
 from operator import attrgetter
 from typing import NewType, Self
@@ -13,6 +14,12 @@ from newsyacht.utils import then
 
 FeedId = NewType("FeedId", int)
 Score = NewType("Score", float)
+
+
+class Vote(Enum):
+    NONE = 0
+    UP = 1
+    DOWN = -1
 
 
 @dataclass
@@ -35,6 +42,9 @@ class Item:
     "An optional link to a thumbnail"
 
     date: datetime | None = field(init=False)
+
+    vote: Vote
+    "How the item has previously been voted on"
 
     _raw_date: str | None = field(repr=False)
 
@@ -105,6 +115,7 @@ class DbItem:
                 author=row["author"],
                 comments=row["comments"],
                 thumbnail=row["thumbnail"],
+                vote=Vote(row["vote"]),
                 _raw_date=row["date"],
                 _raw_guid=row["guid"],
             ),
@@ -198,6 +209,7 @@ class Feed:
                     comments=get(item, "comments"),
                     # TODO(brent) does rss ever have thumbnails?
                     thumbnail=None,
+                    vote=Vote.NONE,
                     _raw_date=iso_date,
                     _raw_guid=get(item, "guid"),
                 )
@@ -254,6 +266,7 @@ class Feed:
                 author=author(item),
                 comments=find(item, "comments"),
                 thumbnail=find(item, "thumbnail", "url") or thumbnail(item),
+                vote=Vote.NONE,
                 _raw_date=find(item, "published") or find(item, "updated"),
                 _raw_guid=find(item, "id"),
             )
