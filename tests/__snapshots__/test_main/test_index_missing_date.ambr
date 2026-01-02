@@ -20,11 +20,40 @@
   	<div id="ptr">Pull to refresh…</div>
   	
   	<h2>Unread</h2>
-  	<ul>
+  	<ul class="post-list">
   	  
   	  
   
   <li class="post">
+    <div class="post-vote">
+      <form method="post" action="/upvote/1">
+        <button
+          class="vote-button vote-up"
+          type="submit"
+          aria-label="Upvote"
+          
+        >
+          <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <polyline points="1,11 8,4 15,11"></polyline>
+          </svg>
+        </button>
+      </form>
+      <div class="post-score">
+        90
+      </div>
+      <form method="post" action="/downvote/1">
+        <button
+          class="vote-button vote-down"
+          type="submit"
+          aria-label="Downvote"
+          
+        >
+          <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <polyline points="1,5 8,12 15,5"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
     <div class="post-body">
   	<div class="post-text">
   	  <div class="post-title">

@@ -1,0 +1,12 @@
+# serializer version: 1
+# name: test_tokenize_hn
+  list([
+    list([
+      'linux',
+      'sandboxes',
+      'and',
+      'fil-c',
+      'comments',
+    ]),
+  ])
+# ---

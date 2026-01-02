@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 from typing import Self
 
+import newsyacht.models
 from newsyacht.config import Url
 from newsyacht.models import DbFeed, DbItem, FeedId, Item, Score
 
@@ -9,7 +10,7 @@ from newsyacht.models import DbFeed, DbItem, FeedId, Item, Score
 class Db:
     path: Path
 
-    def __init__(self, path):
+    def __init__(self, path: Path):
         self.path = path
 
     def __enter__(self) -> Self:
@@ -23,39 +24,73 @@ class Db:
     def _setup_connection(self):
         self.conn.row_factory = sqlite3.Row
 
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS feeds (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                url TEXT NOT NULL UNIQUE,
-                color TEXT,
-                title TEXT,
-                description TEXT,
-                etag TEXT,
-                last_modified TEXT
+        with self.conn:
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feeds (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT NOT NULL UNIQUE,
+                    color TEXT,
+                    title TEXT,
+                    description TEXT,
+                    etag TEXT,
+                    last_modified TEXT
+                )
+                """
             )
-            """
-        )
 
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS items (
-                id            INTEGER PRIMARY KEY,
-                feed_id       INTEGER NOT NULL REFERENCES feeds(id),
-                is_read       INTEGER NOT NULL DEFAULT 0,
-                score         REAL NOT NULL DEFAULT 0.0,
-                title         TEXT,
-                content       TEXT,
-                link          TEXT,
-                author        TEXT,
-                comments      TEXT,
-                thumbnail     TEXT,
-                date          TEXT,
-                guid          TEXT NOT NULL,
-                UNIQUE(feed_id, guid)
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS items (
+                    id            INTEGER PRIMARY KEY,
+                    feed_id       INTEGER NOT NULL REFERENCES feeds(id),
+                    is_read       INTEGER NOT NULL DEFAULT 0,
+                    vote          INTEGER NOT NULL DEFAULT 0,
+                    score         REAL NOT NULL DEFAULT 0.0,
+                    title         TEXT,
+                    content       TEXT,
+                    link          TEXT,
+                    author        TEXT,
+                    comments      TEXT,
+                    thumbnail     TEXT,
+                    date          TEXT,
+                    guid          TEXT NOT NULL,
+                    UNIQUE(feed_id, guid)
+                )
+                """
             )
-            """
-        )
+
+            # Initialize the scoring model with zeros if it doesn't exist
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS model (
+                    id                  INTEGER PRIMARY KEY CHECK (id = 1),
+                    up_docs             INTEGER NOT NULL,
+                    down_docs           INTEGER NOT NULL,
+                    up_total_tokens     INTEGER NOT NULL,
+                    down_total_tokens   INTEGER NOT NULL
+                )
+                """
+            )
+
+            self.conn.execute(
+                """
+                INSERT OR IGNORE INTO model (
+                id, up_docs, down_docs, up_total_tokens, down_total_tokens
+                )
+                VALUES (1, 0, 0, 0, 0)
+                """
+            )
+
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS model_tokens (
+                    text                TEXT PRIMARY KEY,
+                    up                  INTEGER NOT NULL,
+                    down                INTEGER NOT NULL
+                )
+                """
+            )
 
     def get_posts(
         self, days: int | None = None, read: bool | None = None
@@ -93,7 +128,7 @@ class Db:
     def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
         return self._get_posts("items.feed_id = ?", params=(feed_id,))
 
-    def _get_posts(self, *filters, params=()):
+    def _get_posts(self, *filters, params=()) -> list[DbItem]:
         filters = [f for f in filters if f]
         filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
 
@@ -103,6 +138,7 @@ class Db:
                 items.id,
                 items.feed_id,
                 items.is_read,
+                items.vote,
                 items.score,
                 items.title,
                 items.content,
@@ -230,8 +266,18 @@ class Db:
                 (item_id,),
             )
 
+    def set_vote(self, item_id: int, vote: newsyacht.models.Vote):
+        with self.conn:
+            self.conn.execute(
+                "UPDATE items SET vote = ? WHERE id = ?",
+                (vote.value, item_id),
+            )
+
     def get_link(self, item_id):
         return self.conn.execute(
             "SELECT link FROM items WHERE id = ?",
             (item_id,),
         ).fetchone()[0]
+
+    def get_item(self, item_id) -> DbItem:
+        return self._get_posts("items.id = ?", params=(item_id,))[0]

@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_default_model
+  Model(up_docs=0, down_docs=0, up_total_tokens=0, down_total_tokens=0, tokens=defaultdict(<class 'newsyacht.scoring.Token'>, {}))
+# ---

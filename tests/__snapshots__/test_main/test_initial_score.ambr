@@ -1,0 +1,10 @@
+# serializer version: 1
+# name: test_initial_score
+  list([
+    '0.50',
+    '0.35',
+    '0.24',
+    '0.17',
+    '0.12',
+  ])
+# ---

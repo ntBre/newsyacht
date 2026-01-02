@@ -2,10 +2,11 @@ import logging
 import re
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request
+from flask import Flask, redirect, render_template, request, url_for
 
+from newsyacht import models
 from newsyacht.db import Db
-from newsyacht.models import FeedId
+from newsyacht.scoring import Model, Vote
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -33,18 +34,18 @@ def label_text_color(color: str) -> str:
         x = c / 255.0
         return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
 
-    L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
 
     # Tune threshold to taste. ~0.45-0.55 is a common range.
-    return "#111" if L > 0.5 else "#fff"
+    return "#111" if luminance > 0.5 else "#fff"
 
 
 class App:
     app: Flask
     db: Path
 
-    def __init__(self, db: Path):
-        self.db = db
+    def __init__(self, db_path: Path):
+        self.db = db_path
         self.app = Flask(__name__)
 
         self.app.jinja_env.filters["label_text_color"] = label_text_color
@@ -75,7 +76,7 @@ class App:
         def feed(feed_id):
             with Db(self.db) as db:
                 feed_title = db.get_feed_title(feed_id)
-                posts = db.get_posts_by_id(FeedId(feed_id))
+                posts = db.get_posts_by_id(models.FeedId(feed_id))
             posts = [post for post in posts if not post.is_read]
             return render_template("feed.html", posts=posts, feed_title=feed_title)
 
@@ -93,7 +94,29 @@ class App:
             with Db(self.db) as db:
                 db.set_read(item_id)
 
-            return redirect("/")
+            return redirect(request.referrer or url_for("index"))
+
+        @self.app.route("/upvote/<int:item_id>", methods=["POST"])
+        def upvote(item_id):
+            with Db(self.db) as db:
+                item = db.get_item(item_id)
+                if item.vote == models.Vote.NONE:
+                    model = Model.from_db(db)
+                    model.add_item(db, item.text(), Vote.UP)
+                    db.set_vote(item_id, models.Vote.UP)
+
+            return redirect(request.referrer or url_for("index"))
+
+        @self.app.route("/downvote/<int:item_id>", methods=["POST"])
+        def downvote(item_id):
+            with Db(self.db) as db:
+                item = db.get_item(item_id)
+                if item.vote == models.Vote.NONE:
+                    model = Model.from_db(db)
+                    model.add_item(db, item.text(), Vote.DOWN)
+                    db.set_vote(item_id, models.Vote.DOWN)
+
+            return redirect(request.referrer or url_for("index"))
 
     def run(self, *args, **kwargs):
         self.app.run(*args, **kwargs)

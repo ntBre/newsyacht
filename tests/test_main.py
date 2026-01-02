@@ -6,9 +6,11 @@ from xml.etree import ElementTree
 
 import pytest
 
+from newsyacht.cli import initial_score
 from newsyacht.config import Color, Url, load_urls
 from newsyacht.db import Db
 from newsyacht.models import Feed, FeedId, Item, Score
+from newsyacht.scoring import Model, tokenize
 from newsyacht.web import App
 
 
@@ -39,6 +41,17 @@ def db(db_path):
 def seeded_db(db, hn_url, hn_post):
     db.insert_urls(hn_url)
     db.insert_items(hn_post)
+    return db
+
+
+@pytest.fixture
+def arch_db(db):
+    "Return a database seeded with all of the entries from the `arch.xml` fixture"
+
+    db.insert_urls([Url(link="https://www.archlinux.org/feeds/news")])
+    tree = ElementTree.parse("tests/fixtures/arch.xml")
+    feed = Feed._from_xml(tree)
+    db.insert_items([(FeedId(1), Score(1.0), item) for item in feed.items])
     return db
 
 
@@ -138,3 +151,36 @@ def test_thumbnail(snapshot, seeded_db: Db, client):
 
     response = client.get("/?all=1")
     assert snapshot == response.text
+
+
+def test_tokenize_hn(snapshot, seeded_db: Db):
+    posts = []
+    for post in seeded_db.get_posts():
+        text = post.title + post.content
+        posts.append(list(tokenize(text)))
+
+    assert snapshot == posts
+
+
+def test_tokenize_arch(snapshot, arch_db: Db):
+    posts = []
+    for post in arch_db.get_posts():
+        text = post.title + post.content
+        posts.append(list(tokenize(text)))
+
+    assert snapshot == posts
+
+
+def test_default_model(snapshot, db):
+    model = Model.from_db(db)
+    assert snapshot == model
+
+
+def test_initial_score(snapshot, db, hn_post):
+    "Test the decaying scores from an untrained model"
+
+    model = Model.from_db(db)
+    _feed_id, _score, item = next(iter(hn_post))
+    scores = [f"{initial_score(model, item, i):.2f}" for i in range(5)]
+
+    assert snapshot == scores
