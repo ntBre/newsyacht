@@ -46,7 +46,6 @@ class App:
 
     def __init__(self, db_path: Path):
         self.db = db_path
-
         self.app = Flask(__name__)
 
         self.app.jinja_env.filters["label_text_color"] = label_text_color
