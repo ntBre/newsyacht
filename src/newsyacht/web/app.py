@@ -2,7 +2,7 @@ import logging
 import re
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request
+from flask import Flask, redirect, render_template, request, url_for
 
 from newsyacht.db import Db
 from newsyacht.models import FeedId
@@ -93,7 +93,7 @@ class App:
             with Db(self.db) as db:
                 db.set_read(item_id)
 
-            return redirect("/")
+            return redirect(request.referrer or url_for("index"))
 
     def run(self, *args, **kwargs):
         self.app.run(*args, **kwargs)
