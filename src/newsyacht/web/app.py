@@ -43,13 +43,9 @@ def label_text_color(color: str) -> str:
 class App:
     app: Flask
     db: Path
-    model: Model
 
     def __init__(self, db_path: Path):
         self.db = db_path
-
-        with Db(self.db) as db:
-            self.model = Model.from_db(db)
 
         self.app = Flask(__name__)
 
@@ -106,7 +102,8 @@ class App:
             with Db(self.db) as db:
                 item = db.get_item(item_id)
                 if item.vote == models.Vote.NONE:
-                    self.model.add_item(db, item.text(), Vote.UP)
+                    model = Model.from_db(db)
+                    model.add_item(db, item.text(), Vote.UP)
                     db.set_vote(item_id, models.Vote.UP)
 
             return redirect(request.referrer or url_for("index"))
@@ -116,7 +113,8 @@ class App:
             with Db(self.db) as db:
                 item = db.get_item(item_id)
                 if item.vote == models.Vote.NONE:
-                    self.model.add_item(db, item.text(), Vote.DOWN)
+                    model = Model.from_db(db)
+                    model.add_item(db, item.text(), Vote.DOWN)
                     db.set_vote(item_id, models.Vote.DOWN)
 
             return redirect(request.referrer or url_for("index"))
