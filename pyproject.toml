@@ -30,7 +30,9 @@ dev = [
 
 [tool.ruff.lint]
 preview = true
+flake8-annotations = { suppress-none-returning = true, suppress-dummy-args = true }
 extend-select = [
+    # "ANN",
     "C4",
     "DTZ",
     "EM",

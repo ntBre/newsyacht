@@ -9,7 +9,7 @@ from newsyacht.models import DbFeed, DbItem, FeedId, Item, Score
 class Db:
     path: Path
 
-    def __init__(self, path):
+    def __init__(self, path: Path):
         self.path = path
 
     def __enter__(self) -> Self:
@@ -127,7 +127,7 @@ class Db:
     def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
         return self._get_posts("items.feed_id = ?", params=(feed_id,))
 
-    def _get_posts(self, *filters, params=()):
+    def _get_posts(self, *filters, params=()) -> list[DbItem]:
         filters = [f for f in filters if f]
         filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
 

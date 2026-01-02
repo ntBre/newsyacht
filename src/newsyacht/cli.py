@@ -51,14 +51,14 @@ class App:
                 for post in posts:
                     print(f"\t{post}")
 
-    def serve(self, args):
+    def serve(self, args: argparse.Namespace):
         from newsyacht.web import App
 
         app = App(self.db_path)
         app.run("0.0.0.0", port=args.port, use_reloader=False)
 
     @property
-    def db_path(self):
+    def db_path(self) -> Path:
         return self.config_dir / "cache.db"
 
 
