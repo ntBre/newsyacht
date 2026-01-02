@@ -80,6 +80,10 @@ class Item:
             return None
         return self.date.astimezone(UTC).isoformat()
 
+    def text(self) -> str:
+        text = (self.title, self.content, self.link, self.author)
+        return " ".join(t for t in text if t is not None)
+
 
 @dataclass
 class DbItem:

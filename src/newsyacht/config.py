@@ -11,7 +11,7 @@ class Url:
     color: Color | None = None
 
 
-def load_urls(path) -> list[Url]:
+def load_urls(path: Path | str) -> list[Url]:
     """
     Load a sequence of URLs from `path`, one per line.
 

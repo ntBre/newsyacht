@@ -4,8 +4,9 @@ from pathlib import Path
 
 from flask import Flask, redirect, render_template, request, url_for
 
+from newsyacht import models
 from newsyacht.db import Db
-from newsyacht.models import FeedId
+from newsyacht.scoring import Model, Vote
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -42,9 +43,14 @@ def label_text_color(color: str) -> str:
 class App:
     app: Flask
     db: Path
+    model: Model
 
-    def __init__(self, db: Path):
-        self.db = db
+    def __init__(self, db_path: Path):
+        self.db = db_path
+
+        with Db(self.db) as db:
+            self.model = Model.from_db(db)
+
         self.app = Flask(__name__)
 
         self.app.jinja_env.filters["label_text_color"] = label_text_color
@@ -75,7 +81,7 @@ class App:
         def feed(feed_id):
             with Db(self.db) as db:
                 feed_title = db.get_feed_title(feed_id)
-                posts = db.get_posts_by_id(FeedId(feed_id))
+                posts = db.get_posts_by_id(models.FeedId(feed_id))
             posts = [post for post in posts if not post.is_read]
             return render_template("feed.html", posts=posts, feed_title=feed_title)
 
@@ -92,6 +98,26 @@ class App:
 
             with Db(self.db) as db:
                 db.set_read(item_id)
+
+            return redirect(request.referrer or url_for("index"))
+
+        @self.app.route("/upvote/<int:item_id>", methods=["POST"])
+        def upvote(item_id):
+            with Db(self.db) as db:
+                item = db.get_item(item_id)
+                if item.vote == models.Vote.NONE:
+                    self.model.add_item(db, item.text(), Vote.UP)
+                    db.set_vote(item_id, models.Vote.UP)
+
+            return redirect(request.referrer or url_for("index"))
+
+        @self.app.route("/downvote/<int:item_id>", methods=["POST"])
+        def downvote(item_id):
+            with Db(self.db) as db:
+                item = db.get_item(item_id)
+                if item.vote == models.Vote.NONE:
+                    self.model.add_item(db, item.text(), Vote.DOWN)
+                    db.set_vote(item_id, models.Vote.DOWN)
 
             return redirect(request.referrer or url_for("index"))
 

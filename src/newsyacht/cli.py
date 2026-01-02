@@ -76,9 +76,7 @@ def initial_score(model: Model, item: Item, count: int) -> float:
     """
 
     # compute the main score based on the contents of the post
-    text = (item.title, item.content, item.link, item.author)
-    tokens = tokenize(" ".join(t for t in text if t is not None))
-    score = model.score(tokens)
+    score = model.score(tokenize(item.text()))
 
     # throw in some exponential decay for repeated posts from the same source
     decay = 0.7**count

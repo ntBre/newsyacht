@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 from typing import Self
 
+import newsyacht.models
 from newsyacht.config import Url
 from newsyacht.models import DbFeed, DbItem, FeedId, Item, Score
 
@@ -265,8 +266,18 @@ class Db:
                 (item_id,),
             )
 
+    def set_vote(self, item_id: int, vote: newsyacht.models.Vote):
+        with self.conn:
+            self.conn.execute(
+                "UPDATE items SET vote = ? WHERE id = ?",
+                (vote.value, item_id),
+            )
+
     def get_link(self, item_id):
         return self.conn.execute(
             "SELECT link FROM items WHERE id = ?",
             (item_id,),
         ).fetchone()[0]
+
+    def get_item(self, item_id) -> DbItem:
+        return self._get_posts("items.id = ?", params=(item_id,))[0]
