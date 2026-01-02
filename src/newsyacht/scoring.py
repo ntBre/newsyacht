@@ -32,16 +32,16 @@ class Model:
     def from_db(cls, db):
         model = db.conn.execute(
             """
-                SELECT up_docs, down_docs, up_total_tokens, down_total_tokens
-                FROM model
-                WHERE id = 1
-                """,
+            SELECT up_docs, down_docs, up_total_tokens, down_total_tokens
+            FROM model
+            WHERE id = 1
+            """,
         ).fetchone()
         tokens = db.conn.execute(
             """
-                SELECT text, up, down
-                FROM model_tokens
-                """
+            SELECT text, up, down
+            FROM model_tokens
+            """
         )
         return cls(
             tokens=defaultdict(

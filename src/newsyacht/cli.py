@@ -1,8 +1,6 @@
 import argparse
 import logging
-import math
 import os
-import random
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from importlib.metadata import version
@@ -13,6 +11,7 @@ import httpx
 from newsyacht.config import Url, load_urls
 from newsyacht.db import Db
 from newsyacht.models import DbFeed, Feed, FeedId, Item, Score
+from newsyacht.scoring import Model, tokenize
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,8 @@ class App:
 
             feeds = db.get_feeds([url.link for url in urls])
 
-            items = update_feeds(feeds)
+            model = Model.from_db(db)
+            items = update_feeds(model, feeds)
 
             db.update_feeds(feeds)
 
@@ -61,29 +61,32 @@ class App:
     def db_path(self):
         return self.config_dir / "cache.db"
 
-def initial_score(count: int) -> float:
+
+def initial_score(model: Model, item: Item, count: int) -> float:
     """
-    A rudimentary scoring function.
+    Compute the initial score for `item` based on the `Model`, the contents
+    of `item`, and the `count` of other posts from the same feed added in this
+    update.
 
-    All this does for now is return an exponentially decaying value as the
-    number of items from the same source increases.
+    The bulk of the score comes from the `Model`, but we also add an
+    exponential decay factor to multiple posts from the same source in an
+    effort to avoid one feed overwhelming the others.
 
-    We want the score to be bounded in [0, 1], so e^{-x} has the right
-    properties: for the zeroth element it gives 1 and decreases from there. I
-    think it might decrease a bit more quickly than we really want, but that's
-    fine for now since every feed gets the same treatment.
-
-    In other words, it doesn't matter if the score for every second post falls
-    from 1.0 to 0.4 (~e^{-2}) or from 1.0 to 0.9 because every second post will
-    fall by the same amount.
-
-    However, we also throw in a small random variation just for fun.
+    The returned score is bounded in [0, 1].
     """
-    eps = 0.1 * random.random()
-    return math.exp(-(count + eps))
+
+    # compute the main score based on the contents of the post
+    text = (item.title, item.content, item.link, item.author)
+    tokens = tokenize(" ".join(t for t in text if t is not None))
+    score = model.score(tokens)
+
+    # throw in some exponential decay for repeated posts from the same source
+    decay = 0.7**count
+
+    return score * decay
 
 
-def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
+def update_feeds(model: Model, feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
     """
     Fetch a list of feeds, update their metadata in place, and return a
     list of items.
@@ -128,7 +131,8 @@ def update_feeds(feeds: list[DbFeed]) -> list[tuple[FeedId, Score, Item]]:
                 raise
             feed.update(etag=etag, last_modified=last_modified, feed=body)
             for item in body.items:
-                items.append((feed.id, initial_score(items_per_feed[feed.id]), item))
+                score = initial_score(model, item, items_per_feed[feed.id])
+                items.append((feed.id, score, item))
                 items_per_feed[feed.id] += 1
         else:
             logger.error(

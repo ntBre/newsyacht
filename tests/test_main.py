@@ -6,6 +6,7 @@ from xml.etree import ElementTree
 
 import pytest
 
+from newsyacht.cli import initial_score
 from newsyacht.config import Color, Url, load_urls
 from newsyacht.db import Db
 from newsyacht.models import Feed, FeedId, Item, Score
@@ -173,3 +174,13 @@ def test_tokenize_arch(snapshot, arch_db: Db):
 def test_default_model(snapshot, db):
     model = Model.from_db(db)
     assert snapshot == model
+
+
+def test_initial_score(snapshot, db, hn_post):
+    "Test the decaying scores from an untrained model"
+
+    model = Model.from_db(db)
+    _feed_id, _score, item = next(iter(hn_post))
+    scores = [f"{initial_score(model, item, i):.2f}" for i in range(5)]
+
+    assert snapshot == scores
