@@ -21,3 +21,6 @@ format:
 	prettier src/newsyacht/web/static -w
 
 all: format lint check test
+
+install:
+	uv tool install --reinstall .
