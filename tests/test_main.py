@@ -67,7 +67,15 @@ def client(app):
 
 @pytest.mark.parametrize(
     "path",
-    ["arch.xml", "atom.xml", "releases.xml", "hn.xml", "nodate.xml", "reddit.xml"],
+    [
+        "arch.xml",
+        "atom.xml",
+        "releases.xml",
+        "hn.xml",
+        "nodate.xml",
+        "reddit.xml",
+        "isodate.xml",
+    ],
 )
 def test_feed_from_xml(path, snapshot):
     base = Path("tests/fixtures")
