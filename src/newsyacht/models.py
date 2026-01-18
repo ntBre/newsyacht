@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -12,8 +13,11 @@ from xml.etree.ElementTree import Element
 from newsyacht.config import Color
 from newsyacht.utils import then
 
+logger = logging.getLogger(__name__)
+
 FeedId = NewType("FeedId", int)
 Score = NewType("Score", float)
+IsoDate = NewType("IsoDate", str)
 
 
 class Vote(Enum):
@@ -46,7 +50,7 @@ class Item:
     vote: Vote
     "How the item has previously been voted on"
 
-    _raw_date: str | None = field(repr=False)
+    _raw_date: IsoDate | None = field(repr=False)
 
     _raw_guid: str | None = field(repr=False)
     "Input representation of the GUID, which could be missing."
@@ -198,12 +202,7 @@ class Feed:
         for item in channel.iter("item"):
             pub_date = get(item, "pubDate")
 
-            # TODO(brent) I'm pretty sure ty is doing something wrong here
-            # related to https://github.com/astral-sh/ty/issues/1872. If I
-            # change T and U in `then` to `str` and `datetime`, it type checks,
-            # so this seems to be an issue with generic callables.
-            rfc_date: datetime | None = then(pub_date, parsedate_to_datetime)  # ty: ignore [invalid-assignment, invalid-argument-type]
-            iso_date = rfc_date.astimezone(UTC).isoformat() if rfc_date else None
+            iso_date = try_parse_rss_date(pub_date)
             items.append(
                 Item(
                     title=get(item, "title"),
@@ -271,7 +270,9 @@ class Feed:
                 comments=find(item, "comments"),
                 thumbnail=find(item, "thumbnail", "url") or thumbnail(item),
                 vote=Vote.NONE,
-                _raw_date=find(item, "published") or find(item, "updated"),
+                _raw_date=then(
+                    find(item, "published") or find(item, "updated"), IsoDate
+                ),
                 _raw_guid=find(item, "id"),
             )
             for item in root
@@ -321,3 +322,25 @@ class DbFeed:
         self.description = feed.description or self.description
         self.etag = etag or self.etag
         self.last_modified = last_modified or self.last_modified
+
+
+def try_parse_rss_date(date: str | None) -> IsoDate | None:
+    """
+    Try to parse `date` as an RFC 822 date.
+
+    If parsing as an RFC 822 date fails, the date is returned directly,
+    assuming that it is instead an ISO-8601 date.
+    """
+
+    if date is None:
+        return None
+
+    try:
+        rfc_date = parsedate_to_datetime(date)
+    except ValueError:
+        logger.warning("failed to parse `%s` as an RFC 822 date", date)
+        iso_date = date
+    else:
+        iso_date = rfc_date.astimezone(UTC).isoformat()
+
+    return IsoDate(iso_date)
