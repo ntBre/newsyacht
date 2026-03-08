@@ -101,18 +101,20 @@ def update_feeds(model: Model, feeds: list[DbFeed]) -> list[tuple[FeedId, Score,
         # this is the default, but set it explicitly to reuse in the log
         # message.
         timeout = 5.0
+        # ruff:disable[TRY400]
         try:
             response = httpx.get(
                 feed.url, follow_redirects=True, headers=headers, timeout=timeout
             )
         except httpx.TimeoutException:
-            logger.error(  # noqa: TRY400 exception is very noisy
+            logger.error(
                 "Retrieving %s timed out after %.1f sec",
                 feed.url,
                 timeout,
                 exc_info=False,
             )
             continue
+        # ruff:enable[TRY400]
 
         if response.status_code == httpx.codes.NOT_MODIFIED:
             logger.info("feed `%s` was up to date", feed.url)
