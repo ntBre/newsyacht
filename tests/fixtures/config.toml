@@ -1,0 +1,8 @@
+[[feed]]
+link = "https://www.archlinux.org/feeds/news"
+tags = ["arch", "linux", "btw"]
+
+[[feed]]
+link = "https://news.ycombinator.com/rss"
+color = "#ff6600"
+label = "hackernews"

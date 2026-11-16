@@ -1,0 +1,4 @@
+# serializer version: 1
+# name: test_load_config
+  Config(feeds=[Feed(link='https://www.archlinux.org/feeds/news', tags=['arch', 'linux', 'btw'], color=None, label=None), Feed(link='https://news.ycombinator.com/rss', tags=[], color='#ff6600', label='hackernews')])
+# ---

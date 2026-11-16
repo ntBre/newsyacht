@@ -7,7 +7,7 @@ from xml.etree import ElementTree
 import pytest
 
 from newsyacht.cli import initial_score
-from newsyacht.config import Color, Url, load_urls
+from newsyacht.config import Color, Config, Url, load_urls
 from newsyacht.db import Db
 from newsyacht.models import Feed, FeedId, Item, Score
 from newsyacht.scoring import Model, tokenize
@@ -85,6 +85,10 @@ def test_feed_from_xml(path, snapshot):
 
 def test_load_urls(snapshot):
     assert load_urls("tests/fixtures/urls") == snapshot
+
+
+def test_load_config(snapshot):
+    assert Config.from_path("tests/fixtures/config.toml") == snapshot
 
 
 def test_insert_comments(snapshot, seeded_db):
