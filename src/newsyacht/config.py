@@ -69,7 +69,7 @@ def load_urls(path: Path | str) -> list[Url]:
             case [url]:
                 urls.append(Url(url))
             case [url, color]:
-                urls.append(Url(url, color))
+                urls.append(Url(url, Color(color)))
             case line:
                 msg = f"Unable to parse line: {line}"
                 raise ValueError(msg)
