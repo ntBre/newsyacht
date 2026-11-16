@@ -3,12 +3,9 @@ run *args:
 	uv run -- newsyacht {{args}}
 
 # Run the tests
-test *args:
-	uv run -- pytest tests -vv {{args}}
-
-# Run the tests and accept any snapshot changes
-accept:
-	uv run -- pytest tests --snapshot-update
+[arg("update", short="u", value="--snapshot-update")]
+test update="" *args:
+	uv run -- pytest tests -vv {{args}} {{update}}
 
 # Lint with Ruff
 lint *args:
