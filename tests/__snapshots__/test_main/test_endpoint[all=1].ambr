@@ -31,7 +31,6 @@
           class="vote-button vote-up"
           type="submit"
           aria-label="Upvote"
-          
         >
           <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
             <polyline points="1,11 8,4 15,11"></polyline>
@@ -46,7 +45,6 @@
           class="vote-button vote-down"
           type="submit"
           aria-label="Downvote"
-          
         >
           <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
             <polyline points="1,5 8,12 15,5"></polyline>

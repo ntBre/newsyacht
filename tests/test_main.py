@@ -1,5 +1,6 @@
 import datetime
 import re
+from collections import Counter
 from copy import deepcopy
 from pathlib import Path
 from xml.etree import ElementTree
@@ -10,8 +11,8 @@ from newsyacht.cli import initial_score
 from newsyacht.config import Color, Config, load_urls
 from newsyacht.config import Feed as ConfigFeed
 from newsyacht.db import Db
-from newsyacht.models import Feed, FeedId, Item, Score
-from newsyacht.scoring import Model, tokenize
+from newsyacht.models import Feed, FeedId, Item, Score, Vote
+from newsyacht.scoring import Model, Token, tokenize
 from newsyacht.web import App
 
 
@@ -229,3 +230,35 @@ def test_initial_score(snapshot, db, hn_post):
     scores = [f"{initial_score(model, item, i):.2f}" for i in range(5)]
 
     assert snapshot == scores
+
+
+@pytest.mark.parametrize("vote", [Vote.UP, Vote.DOWN])
+def test_reversible_votes(seeded_db, client, vote):
+    post = seeded_db.get_posts()[0]
+    counts = Counter(tokenize(post.text()))
+    total = sum(counts.values())
+    opposite = Vote.DOWN if vote == Vote.UP else Vote.UP
+
+    for action, expected in [
+        (vote, vote),
+        (vote, Vote.NONE),
+        (vote, vote),
+        (opposite, opposite),
+        (opposite, Vote.NONE),
+    ]:
+        endpoint = "upvote" if action == Vote.UP else "downvote"
+        assert client.post(f"/{endpoint}/{post.id}").status_code == 302
+        assert seeded_db.get_item(post.id).vote == expected
+
+        model = Model.from_db(seeded_db)
+        up, down = int(expected == Vote.UP), int(expected == Vote.DOWN)
+        assert (model.up_docs, model.down_docs) == (up, down)
+        assert (model.up_total_tokens, model.down_total_tokens) == (
+            total * up,
+            total * down,
+        )
+        assert model.tokens == {
+            text: Token(up=count * up, down=count * down)
+            for text, count in counts.items()
+            if expected != Vote.NONE
+        }

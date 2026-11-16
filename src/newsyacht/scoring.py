@@ -3,9 +3,9 @@ import re
 from collections import Counter, defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass
-from enum import Enum, auto
 
 from newsyacht.db import Db
+from newsyacht.models import Vote
 
 HTML_COMMENTS = re.compile(r"<!--.*?-->", re.DOTALL)
 HTML_TAGS = re.compile(r"<[^>]+>")
@@ -88,19 +88,35 @@ class Model:
 
         return sigmoid(score)
 
-    def add_item(self, db: Db, document: str, vote: Vote):
+    @classmethod
+    def change_vote(cls, db: Db, item_id: int, vote: Vote) -> None:
+        """Toggle or replace a vote and its training data atomically."""
+        with db.conn:
+            # Lock before reading the vote and model to avoid concurrent updates.
+            db.conn.execute("BEGIN IMMEDIATE")
+            item = db.get_item(item_id)
+            new_vote = Vote.NONE if item.vote == vote else vote
+
+            model = cls.from_db(db)
+            document = item.text()
+            if item.vote != Vote.NONE:
+                model._adjust_item(db, document, item.vote, delta=-1)
+            if new_vote != Vote.NONE:
+                model._adjust_item(db, document, new_vote, delta=1)
+
+            db.conn.execute(
+                "UPDATE items SET vote = ? WHERE id = ?", (new_vote.value, item_id)
+            )
+            # A removed vote may leave tokens with no remaining occurrences.
+            db.conn.execute("DELETE FROM model_tokens WHERE up = 0 AND down = 0")
+
+    def _adjust_item(self, db: Db, document: str, vote: Vote, *, delta: int) -> None:
+        """Apply or reverse a document's contribution inside a transaction."""
         counts = Counter(tokenize(document))
-        new_tokens = sum(counts.values())
-        # The handling of `updated` here was originally a typo (I meant for it
-        # to track the total, not the delta), but GPT "strongly recommended"
-        # handling them as deltas and applying them in SQL. I'm not really sure
-        # if its concerns about updating the DB in another process or
-        # forgetting to load tokens are applicable here, but it sounded
-        # reasonable anyway. Thus, `updated` is the delta from this item, and
-        # the SQL below adds the results from `updated` to the values already
-        # in the DB.
+        total_tokens = sum(counts.values()) * delta
         updated = defaultdict(Token)
         for text, count in counts.items():
+            count *= delta
             match vote:
                 case Vote.UP:
                     self.tokens[text].up += count
@@ -111,37 +127,35 @@ class Model:
 
         match vote:
             case Vote.UP:
-                self.up_docs += 1
-                self.up_total_tokens += new_tokens
+                self.up_docs += delta
+                self.up_total_tokens += total_tokens
             case Vote.DOWN:
-                self.down_docs += 1
-                self.down_total_tokens += new_tokens
+                self.down_docs += delta
+                self.down_total_tokens += total_tokens
 
-        with db.conn:
-            db.conn.execute(
-                """
-                UPDATE model
-                SET up_docs = ?, down_docs = ?, up_total_tokens = ?, down_total_tokens = ?
-                WHERE id = 1
-                """,
-                (
-                    self.up_docs,
-                    self.down_docs,
-                    self.up_total_tokens,
-                    self.down_total_tokens,
-                ),
-            )
-
-            db.conn.executemany(
-                """
-                INSERT INTO model_tokens (text, up, down)
-                VALUES (?, ?, ?)
-                ON CONFLICT(text) DO UPDATE SET
-                    up = up + excluded.up,
-                    down = down + excluded.down
-                """,
-                [(text, token.up, token.down) for text, token in updated.items()],
-            )
+        db.conn.execute(
+            """
+            UPDATE model
+            SET up_docs = ?, down_docs = ?, up_total_tokens = ?, down_total_tokens = ?
+            WHERE id = 1
+            """,
+            (
+                self.up_docs,
+                self.down_docs,
+                self.up_total_tokens,
+                self.down_total_tokens,
+            ),
+        )
+        db.conn.executemany(
+            """
+            INSERT INTO model_tokens (text, up, down)
+            VALUES (?, ?, ?)
+            ON CONFLICT(text) DO UPDATE SET
+                up = up + excluded.up,
+                down = down + excluded.down
+            """,
+            [(text, token.up, token.down) for text, token in updated.items()],
+        )
 
 
 @dataclass
@@ -154,11 +168,6 @@ class Token:
 
     up: int = 0
     down: int = 0
-
-
-class Vote(Enum):
-    UP = auto()
-    DOWN = auto()
 
 
 def tokenize(text: str) -> Iterator[str]:

@@ -6,7 +6,7 @@ from flask import Flask, redirect, render_template, request, url_for
 
 from newsyacht import models
 from newsyacht.db import Db
-from newsyacht.scoring import Model, Vote
+from newsyacht.scoring import Model
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -99,22 +99,14 @@ class App:
         @self.app.route("/upvote/<int:item_id>", methods=["POST"])
         def upvote(item_id):
             with Db(self.db) as db:
-                item = db.get_item(item_id)
-                if item.vote == models.Vote.NONE:
-                    model = Model.from_db(db)
-                    model.add_item(db, item.text(), Vote.UP)
-                    db.set_vote(item_id, models.Vote.UP)
+                Model.change_vote(db, item_id, models.Vote.UP)
 
             return redirect(request.referrer or url_for("index"))
 
         @self.app.route("/downvote/<int:item_id>", methods=["POST"])
         def downvote(item_id):
             with Db(self.db) as db:
-                item = db.get_item(item_id)
-                if item.vote == models.Vote.NONE:
-                    model = Model.from_db(db)
-                    model.add_item(db, item.text(), Vote.DOWN)
-                    db.set_vote(item_id, models.Vote.DOWN)
+                Model.change_vote(db, item_id, models.Vote.DOWN)
 
             return redirect(request.referrer or url_for("index"))
 
