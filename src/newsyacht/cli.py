@@ -101,7 +101,7 @@ def update_feeds(model: Model, feeds: list[DbFeed]) -> list[tuple[FeedId, Score,
         # this is the default, but set it explicitly to reuse in the log
         # message.
         timeout = 5.0
-        # ruff:disable[TRY400]
+        # ruff:disable[error-instead-of-exception]
         try:
             response = httpx.get(
                 feed.url, follow_redirects=True, headers=headers, timeout=timeout
@@ -116,7 +116,7 @@ def update_feeds(model: Model, feeds: list[DbFeed]) -> list[tuple[FeedId, Score,
             continue
         except httpx.ConnectError:
             logger.error("Connection refused to %s", feed.url, exc_info=False)
-        # ruff:enable[TRY400]
+        # ruff:enable[error-instead-of-exception]
 
         if response.status_code == httpx.codes.NOT_MODIFIED:
             logger.info("feed `%s` was up to date", feed.url)
