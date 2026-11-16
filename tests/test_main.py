@@ -83,6 +83,30 @@ def test_feed_from_xml(path, snapshot):
     assert Feed._from_xml(tree) == snapshot
 
 
+def test_atom_article_link():
+    api_url = "https://www.blogger.com/feeds/8520/posts/default/4555227175724144174"
+    article_url = (
+        "https://pyfound.blogspot.com/2026/11/"
+        "python-is-for-everyone-join-in-psf-year.html"
+    )
+    feed = Feed.from_xml(
+        f"""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <link rel="self" href="https://www.blogger.com/feeds/8520/posts/default"/>
+            <link rel="alternate" href="https://pyfound.blogspot.com/"/>
+            <entry>
+                <id>tag:blogger.com,1999:blog-8520.post-4555227175724144174</id>
+                <link rel="edit" type="application/atom+xml" href="{api_url}"/>
+                <link rel="self" type="application/atom+xml" href="{api_url}"/>
+                <link rel="alternate" type="text/html" href="{article_url}"/>
+            </entry>
+        </feed>
+        """
+    )
+    assert feed.link == "https://pyfound.blogspot.com/"
+    assert feed.items[0].link == article_url
+
+
 def test_load_urls(snapshot):
     assert load_urls("tests/fixtures/urls") == snapshot
 

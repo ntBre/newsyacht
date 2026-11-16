@@ -243,6 +243,15 @@ class Feed:
                 return item.attrib.get(attr)
             return None
 
+        def link(element: Element[str]) -> str | None:
+            for item in element:
+                if (
+                    item.tag.endswith("link")
+                    and item.get("rel", "alternate") == "alternate"
+                ):
+                    return item.get("href")
+            return None
+
         def author(element: Element[str]):
             author = get(element, "author")
             if author is None:
@@ -264,7 +273,7 @@ class Feed:
         items = [
             Item(
                 title=find(item, "title"),
-                link=find(item, "link", "href"),
+                link=link(item),
                 content=find(item, "content"),
                 author=author(item),
                 comments=find(item, "comments"),
@@ -281,7 +290,7 @@ class Feed:
 
         return cls(
             title=find(root, "title"),
-            link=find(root, "link", "href"),
+            link=link(root),
             description=find(root, "content"),
             items=items,
         )
