@@ -28,18 +28,18 @@ class Config:
     @classmethod
     def from_path(cls, path: Path | str) -> Self:
         """
-        Try to load a config file from `path` as TOML, falling back to the
-        legacy URL format if that fails.
+        Load config.toml as TOML or urls in the legacy URL format.
         """
         path = Path(path)
-        try:
-            data = tomllib.loads(path.read_text())
-            if feeds := data.get("feed"):
-                return cls([Feed(**feed) for feed in feeds])
-        except tomllib.TOMLDecodeError:
-            urls = load_urls(path)
-            feeds = [Feed(link=url.link, color=url.color) for url in urls]
-            return cls(feeds)
+        match path.name:
+            case "config.toml":
+                data = tomllib.loads(path.read_text())
+                if feeds := data.get("feed"):
+                    return cls([Feed(**feed) for feed in feeds])
+            case "urls":
+                urls = load_urls(path)
+                feeds = [Feed(link=url.link, color=url.color) for url in urls]
+                return cls(feeds)
 
         raise ValueError(f"Failed to load config from {path}")
 

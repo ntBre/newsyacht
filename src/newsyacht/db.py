@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Self
 
 import newsyacht.models
-from newsyacht.config import Url
+from newsyacht.config import Feed
 from newsyacht.models import DbFeed, DbItem, FeedId, Item, Score
 
 
@@ -31,11 +31,28 @@ class Db:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url TEXT NOT NULL UNIQUE,
                     color TEXT,
+                    label TEXT,
                     title TEXT,
                     description TEXT,
                     etag TEXT,
                     last_modified TEXT
                 )
+                """
+            )
+
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS feed_tags (
+                    feed_id INTEGER NOT NULL REFERENCES feeds(id),
+                    tag TEXT NOT NULL,
+                    PRIMARY KEY (feed_id, tag)
+                )
+                """
+            )
+
+            self.conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS feed_tags_by_tag ON feed_tags(tag, feed_id)
                 """
             )
 
@@ -144,7 +161,7 @@ class Db:
                 items.content,
                 items.link,
                 items.thumbnail,
-                COALESCE(items.author, feeds.title) AS author,
+                COALESCE(feeds.label, items.author, feeds.title) AS author,
                 items.comments,
                 items.date,
                 items.guid,
@@ -160,17 +177,30 @@ class Db:
 
         return [DbItem.from_row(row) for row in cur.fetchall()]
 
-    def insert_urls(self, urls: list[Url]):
+    def insert_feeds(self, feeds: list[Feed]):
         with self.conn:
-            self.conn.executemany(
-                """
-                INSERT INTO feeds (url, color)
-                VALUES (?, ?)
-                ON CONFLICT(url) DO UPDATE SET
-                    color = excluded.color
-                """,
-                [(url.link, url.color) for url in urls],
-            )
+            for feed in feeds:
+                feed_id = self.conn.execute(
+                    """
+                    INSERT INTO feeds (url, color, label)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(url) DO UPDATE SET
+                        color = excluded.color,
+                        label = excluded.label
+                    RETURNING id
+                    """,
+                    (feed.link, feed.color, feed.label),
+                ).fetchone()["id"]
+
+                self.conn.execute("DELETE FROM feed_tags WHERE feed_id = ?", (feed_id,))
+                self.conn.executemany(
+                    """
+                    INSERT INTO feed_tags (feed_id, tag)
+                    VALUES (?, ?)
+                    ON CONFLICT(feed_id, tag) DO NOTHING
+                    """,
+                    [(feed_id, tag) for tag in feed.tags],
+                )
 
     def get_feeds(self, urls: list[str]):
         placeholders = ",".join("?" for _ in urls)

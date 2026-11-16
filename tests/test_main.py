@@ -7,7 +7,8 @@ from xml.etree import ElementTree
 import pytest
 
 from newsyacht.cli import initial_score
-from newsyacht.config import Color, Config, Url, load_urls
+from newsyacht.config import Color, Config, load_urls
+from newsyacht.config import Feed as ConfigFeed
 from newsyacht.db import Db
 from newsyacht.models import Feed, FeedId, Item, Score
 from newsyacht.scoring import Model, tokenize
@@ -22,8 +23,8 @@ def hn_post() -> list[tuple[FeedId, Score, Item]]:
 
 
 @pytest.fixture
-def hn_url() -> list[Url]:
-    return [Url(link="https://news.ycombinator.com/rss", color=Color("#ff6600"))]
+def hn_feed() -> list[ConfigFeed]:
+    return [ConfigFeed(link="https://news.ycombinator.com/rss", color=Color("#ff6600"))]
 
 
 @pytest.fixture
@@ -38,8 +39,8 @@ def db(db_path):
 
 
 @pytest.fixture
-def seeded_db(db, hn_url, hn_post):
-    db.insert_urls(hn_url)
+def seeded_db(db, hn_feed, hn_post):
+    db.insert_feeds(hn_feed)
     db.insert_items(hn_post)
     return db
 
@@ -48,7 +49,7 @@ def seeded_db(db, hn_url, hn_post):
 def arch_db(db):
     "Return a database seeded with all of the entries from the `arch.xml` fixture"
 
-    db.insert_urls([Url(link="https://www.archlinux.org/feeds/news")])
+    db.insert_feeds([ConfigFeed(link="https://www.archlinux.org/feeds/news")])
     tree = ElementTree.parse("tests/fixtures/arch.xml")
     feed = Feed._from_xml(tree)
     db.insert_items([(FeedId(1), Score(1.0), item) for item in feed.items])
@@ -91,6 +92,14 @@ def test_load_config(snapshot):
     assert Config.from_path("tests/fixtures/config.toml") == snapshot
 
 
+def test_feed_config(seeded_db):
+    config = Config.from_path("tests/fixtures/config.toml")
+    seeded_db.insert_feeds(config.feeds)
+
+    post = seeded_db.get_posts()[0]
+    assert (post.author, post.color) == ("hackernews", "#ff6600")
+
+
 def test_insert_comments(snapshot, seeded_db):
     posts = seeded_db.get_posts()
 
@@ -98,8 +107,8 @@ def test_insert_comments(snapshot, seeded_db):
     assert posts[0].comments == snapshot
 
 
-def test_ranked_index(snapshot, db, hn_url, hn_post, client):
-    db.insert_urls(hn_url)
+def test_ranked_index(snapshot, db, hn_feed, hn_post, client):
+    db.insert_feeds(hn_feed)
     # append a second post with a higher score and test that it sorts
     # first
     feed_id, _score, item = hn_post[0]
@@ -122,7 +131,7 @@ def test_endpoint(snapshot, seeded_db, client, endpoint):
 
 def test_index_missing_date(snapshot, db, client):
     url = "https://example.com/nodate.xml"
-    db.insert_urls([Url(link=url)])
+    db.insert_feeds([ConfigFeed(link=url)])
     feed_id = db.get_feeds([url])[0].id
     tree = ElementTree.parse("tests/fixtures/nodate.xml")
     feed = Feed._from_xml(tree)
@@ -131,13 +140,13 @@ def test_index_missing_date(snapshot, db, client):
     assert snapshot == response.text
 
 
-def test_default_post_sorting(snapshot, db, hn_url, hn_post, client):
+def test_default_post_sorting(snapshot, db, hn_feed, hn_post, client):
     """
     The other `/` tests pass `?all=1` to avoid filtering out old posts.
     Here, we insert a new post with a generated date and test that it's shown
     while the others are filtered out.
     """
-    db.insert_urls(hn_url)
+    db.insert_feeds(hn_feed)
     feed_id, score, item = hn_post[0]
     new_item = deepcopy(item)
     new_item.title = "Higher scoring post"

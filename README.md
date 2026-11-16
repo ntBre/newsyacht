@@ -20,17 +20,26 @@ uv tool install git+https://github.com/ntBre/newsyacht
 
 ## Usage
 
-newsyacht reads a single `urls` file from the newsyacht directory in
-`$XDG_CONFIG_HOME` (or `$HOME/.config`). To subscribe to newsyacht releases on
-GitHub you could add a URL like this:
+newsyacht reads `config.toml` from the newsyacht directory in `$XDG_CONFIG_HOME`
+(or `$HOME/.config`). To subscribe to newsyacht releases on GitHub, create
+`~/.config/newsyacht/config.toml` like this:
 
-```shell
-mkdir -p ~/.config/newsyacht
-echo 'https://github.com/ntBre/newsyacht/releases.atom' > ~/.config/newsyacht/urls
+```toml
+[[feed]]
+link = "https://github.com/ntBre/newsyacht/releases.atom"
+tags = ["software", "releases"]
+color = "#ff6600"
+label = "newsyacht"
 ```
 
-The file should contain a single URL per line. Lines starting with `#` are
-ignored.
+with one `[[feed]]` section per subscription. `link` is the only required field,
+while the others are optional. `label` and `color` override the display of the
+feed's author field. `tags` are currently unused but are intended for a future
+filtering and grouping mechanism.
+
+If `config.toml` does not exist, newsyacht reads the legacy `urls` file instead.
+This format contains one URL per line, optionally followed by a color. Blank
+lines and lines starting with `#` are ignored.
 
 Once you have a URL or two, run your first update with:
 

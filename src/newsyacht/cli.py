@@ -8,7 +8,7 @@ from pathlib import Path
 
 import httpx
 
-from newsyacht.config import Url, load_urls
+from newsyacht.config import Config
 from newsyacht.db import Db
 from newsyacht.models import DbFeed, Feed, FeedId, Item, Score
 from newsyacht.scoring import Model, tokenize
@@ -20,15 +20,18 @@ logger = logging.getLogger(__name__)
 class App:
     config_dir: Path
 
-    def load_urls(self) -> list[Url]:
-        return load_urls(self.config_dir / "urls")
+    def load_config(self) -> Config:
+        path = self.config_dir / "config.toml"
+        if not path.exists():
+            path = self.config_dir / "urls"
+        return Config.from_path(path)
 
     def update(self, _args):
+        config = self.load_config()
         with Db(self.db_path) as db:
-            urls = self.load_urls()
-            db.insert_urls(urls)
+            db.insert_feeds(config.feeds)
 
-            feeds = db.get_feeds([url.link for url in urls])
+            feeds = db.get_feeds([feed.link for feed in config.feeds])
 
             model = Model.from_db(db)
             items = update_feeds(model, feeds)
