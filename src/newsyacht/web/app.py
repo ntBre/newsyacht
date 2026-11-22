@@ -2,7 +2,7 @@ import logging
 import re
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 from newsyacht import models
 from newsyacht.db import Db
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 
 HEX_COLOR = re.compile(r"#([a-zA-Z0-9]{6})")
+PAGE_SIZE = 50
 
 
 def label_text_color(color: str) -> str:
@@ -50,15 +51,62 @@ class App:
 
         self.app.jinja_env.filters["label_text_color"] = label_text_color
 
+        def updated_post(db: Db, item_id: int):
+            if request.headers.get("X-Newsyacht-Fragment") == "post":
+                return render_template("post_fragment.html", post=db.get_item(item_id))
+            return redirect(request.referrer or url_for("index"))
+
         @self.app.route("/")
         def index():
+            unread_only = request.args.get("unread") == "1"
+            tag = request.args.get("tag") or None
+            fragment = request.headers.get("X-Newsyacht-Fragment")
+            before = request.args.get("before", type=int)
+            if "before" in request.args and (before is None or not 0 < before < 2**63):
+                abort(400)
+
             with Db(self.db) as db:
-                posts = (
-                    db.get_posts()
-                    if request.args.get("all")
-                    else db.get_posts(days=3, read=False)
+                posts = db.get_posts(
+                    read=False if unread_only else None,
+                    limit=PAGE_SIZE + 1,
+                    before=before,
+                    tag=tag,
                 )
-            return render_template("index.html", posts=posts)
+                tags = db.get_tags() if fragment != "posts" else []
+            has_more = len(posts) > PAGE_SIZE
+            posts = posts[:PAGE_SIZE]
+            more_url = (
+                url_for(
+                    "index",
+                    before=posts[-1].id,
+                    unread=1 if unread_only else None,
+                    tag=tag,
+                )
+                if has_more
+                else None
+            )
+
+            match fragment:
+                case "posts":
+                    template = "posts_fragment.html"
+                case "page":
+                    template = "index_content.html"
+                case _:
+                    template = "index.html"
+            response = self.app.make_response(
+                render_template(
+                    template,
+                    posts=posts,
+                    unread_only=unread_only,
+                    more_url=more_url,
+                    tag=tag,
+                    tags=tags,
+                )
+            )
+            response.vary.add("X-Newsyacht-Fragment")
+            if fragment == "posts" and more_url:
+                response.headers["X-Newsyacht-Next"] = more_url
+            return response
 
         @self.app.route("/archive")
         def archive():
@@ -77,7 +125,6 @@ class App:
             with Db(self.db) as db:
                 feed_title = db.get_feed_title(feed_id)
                 posts = db.get_posts_by_id(models.FeedId(feed_id))
-            posts = [post for post in posts if not post.is_read]
             return render_template("feed.html", posts=posts, feed_title=feed_title)
 
         @self.app.route("/read/<int:item_id>")
@@ -87,28 +134,29 @@ class App:
                 link = db.get_link(item_id)
             return redirect(link)
 
-        @self.app.route("/mark-read/<int:item_id>")
+        @self.app.route("/mark-read/<int:item_id>", methods=["POST"])
         def mark_read(item_id):
-            "Like `App.read` but redirect to home without visiting the link"
-
             with Db(self.db) as db:
                 db.set_read(item_id)
+                return updated_post(db, item_id)
 
-            return redirect(request.referrer or url_for("index"))
+        @self.app.route("/mark-unread/<int:item_id>", methods=["POST"])
+        def mark_unread(item_id):
+            with Db(self.db) as db:
+                db.set_read(item_id, False)
+                return updated_post(db, item_id)
 
         @self.app.route("/upvote/<int:item_id>", methods=["POST"])
         def upvote(item_id):
             with Db(self.db) as db:
                 Model.change_vote(db, item_id, models.Vote.UP)
-
-            return redirect(request.referrer or url_for("index"))
+                return updated_post(db, item_id)
 
         @self.app.route("/downvote/<int:item_id>", methods=["POST"])
         def downvote(item_id):
             with Db(self.db) as db:
                 Model.change_vote(db, item_id, models.Vote.DOWN)
-
-            return redirect(request.referrer or url_for("index"))
+                return updated_post(db, item_id)
 
     def run(self, *args, **kwargs):
         self.app.run(*args, **kwargs)

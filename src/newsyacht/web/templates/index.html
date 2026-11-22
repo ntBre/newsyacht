@@ -2,14 +2,7 @@
 <html lang="en">
   {% include "head.html" %}
   <body>
-	{% include "nav.html" %}
-	<div id="ptr">Pull to refresh…</div>
-	{% import "posts.html" as p %}
-	<h2>Unread</h2>
-	<ul class="post-list">
-	  {% for post in posts %}
-	  {{ p.render_post(post) }}
-	  {% endfor %}
-	</ul>
+    <div id="ptr">Pull to refresh…</div>
+    {% include "index_content.html" %}
   </body>
 </html>

@@ -6,7 +6,7 @@
 	<div id="ptr">Pull to refresh…</div>
 	{% import "posts.html" as p %}
 	<h2>Read</h2>
-	<ul class="post-list">
+	<ul class="post-list" data-read-filter="read">
 	  {% for post in posts %}
 	  {{ p.render_post(post) }}
 	  {% endfor %}

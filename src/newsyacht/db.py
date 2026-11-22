@@ -110,7 +110,13 @@ class Db:
             )
 
     def get_posts(
-        self, days: int | None = None, read: bool | None = None
+        self,
+        days: int | None = None,
+        read: bool | None = None,
+        *,
+        limit: int | None = None,
+        before: int | None = None,
+        tag: str | None = None,
     ) -> list[DbItem]:
         """
         Get posts from the database, optionally filtered by `days` and `read`.
@@ -139,15 +145,57 @@ class Db:
                 read_filter = "items.is_read = 0"
 
         link_filter = "items.link IS NOT NULL"
+        # Keyset pagination: the cursor remains valid even when the last
+        # displayed article is marked read and disappears from Unread results.
+        before_filter = (
+            """(
+                COALESCE(substr(items.date, 1, 10), ''), items.score, items.id
+            ) < (
+                SELECT COALESCE(substr(cursor.date, 1, 10), ''),
+                       cursor.score, cursor.id
+                FROM items AS cursor WHERE cursor.id = ?
+            )"""
+            if before is not None
+            else ""
+        )
+        tag_filter = (
+            """EXISTS (
+                SELECT 1 FROM feed_tags
+                WHERE feed_tags.feed_id = items.feed_id AND feed_tags.tag = ?
+            )"""
+            if tag is not None
+            else ""
+        )
+        params: list[int | str] = []
+        if before is not None:
+            params.append(before)
+        if tag is not None:
+            params.append(tag)
+        return self._get_posts(
+            link_filter,
+            date_filter,
+            read_filter,
+            before_filter,
+            tag_filter,
+            params=tuple(params),
+            limit=limit,
+        )
 
-        return self._get_posts(link_filter, date_filter, read_filter)
+    def get_tags(self) -> list[str]:
+        rows = self.conn.execute(
+            "SELECT DISTINCT tag FROM feed_tags ORDER BY tag COLLATE NOCASE, tag"
+        )
+        return [row["tag"] for row in rows]
 
     def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
         return self._get_posts("items.feed_id = ?", params=(feed_id,))
 
-    def _get_posts(self, *filters, params=()) -> list[DbItem]:
+    def _get_posts(self, *filters, params=(), limit: int | None = None) -> list[DbItem]:
         filters = [f for f in filters if f]
         filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        page_clause = "LIMIT ?" if limit is not None else ""
+        if limit is not None:
+            params = (*params, limit)
 
         cur = self.conn.execute(
             f"""
@@ -170,7 +218,9 @@ class Db:
             JOIN feeds
             ON feeds.id = items.feed_id
             {filter_clause}
-            ORDER BY substr(items.date, 1, 10) DESC, items.score DESC
+            ORDER BY COALESCE(substr(items.date, 1, 10), '') DESC,
+                     items.score DESC, items.id DESC
+            {page_clause}
             """,
             params,
         )
@@ -289,11 +339,11 @@ class Db:
         )
         return cur.fetchone()["title"]
 
-    def set_read(self, item_id):
+    def set_read(self, item_id: int, read: bool = True):
         with self.conn:
             self.conn.execute(
-                "UPDATE items SET is_read = 1 WHERE id = ?",
-                (item_id,),
+                "UPDATE items SET is_read = ? WHERE id = ?",
+                (int(read), item_id),
             )
 
     def set_vote(self, item_id: int, vote: newsyacht.models.Vote):

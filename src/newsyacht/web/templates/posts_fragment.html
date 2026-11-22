@@ -1,0 +1,4 @@
+{% import "posts.html" as p %}
+{% for post in posts %}
+{{ p.render_post(post) }}
+{% endfor %}

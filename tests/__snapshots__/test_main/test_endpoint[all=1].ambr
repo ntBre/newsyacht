@@ -8,29 +8,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
     <script defer src="/static/pull_to_refresh.js"></script>
+    <script defer src="/static/app.js"></script>
     <title>newsyacht</title>
   </head>
     <body>
-  	<div class="navigation">
-    <ul>
-  	<li class=nav><a class=nav href="/">Home</a></li>
-  	<li class=nav><a class=nav href="/archive">Read</a></li>
-    </ul>
-  </div>
-  	<div id="ptr">Pull to refresh…</div>
-  	
-  	<h2>Unread</h2>
-  	<ul class="post-list">
-  	  
-  	  
+      <div id="ptr">Pull to refresh…</div>
+      <main id="main-content">
+    
+    <nav class="view-navigation" aria-label="Post views">
+      <a href="/" data-nav aria-current="page">Recent</a>
+      <a href="/?unread=1" data-nav>Unread</a>
+      <a href="/archive">Read</a>
+    </nav>
+    <h2 tabindex="-1">Recent</h2>
+    <ul class="post-list" id="post-list">
+      
   
-  <li class="post">
+  
+  
+  <li class="post" data-post-id="1">
     <div class="post-vote">
-      <form method="post" action="/upvote/1">
+      <form method="post" action="/upvote/1" data-async-post>
         <button
           class="vote-button vote-up"
           type="submit"
           aria-label="Upvote"
+          aria-pressed="false"
         >
           <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
             <polyline points="1,11 8,4 15,11"></polyline>
@@ -40,11 +43,12 @@
       <div class="post-score">
         90
       </div>
-      <form method="post" action="/downvote/1">
+      <form method="post" action="/downvote/1" data-async-post>
         <button
           class="vote-button vote-down"
           type="submit"
           aria-label="Downvote"
+          aria-pressed="false"
         >
           <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
             <polyline points="1,5 8,12 15,5"></polyline>
@@ -55,7 +59,7 @@
     <div class="post-body">
   	<div class="post-text">
   	  <div class="post-title">
-  		<a href="/read/1">Linux Sandboxes and Fil-C</a>
+  		<a href="/read/1" target="_blank" rel="noopener noreferrer" data-mark-read-url="/mark-read/1">Linux Sandboxes and Fil-C</a>
   	  </div>
   
   	  <div class="post-meta">
@@ -77,9 +81,9 @@
   		
   		· <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
   		
-  		
-  		· <a href="/mark-read/1">Mark Read</a>
-  		
+  		· <form class="post-read-action" method="post" action="/mark-read/1" data-async-post>
+  		  <button type="submit">Mark read</button>
+  		</form>
   	  </div>
   	</div>
   
@@ -88,8 +92,10 @@
   </li>
   
   
-  	  
-  	</ul>
+  
+    </ul>
+    
+  </main>
     </body>
   </html>
   '''

@@ -1,12 +1,13 @@
 {% macro render_post(post) %}
 
-<li class="post">
+<li class="post{% if post.is_read %} is-read{% endif %}" data-post-id="{{ post.id }}">
   <div class="post-vote">
-    <form method="post" action="/upvote/{{ post.id }}">
+    <form method="post" action="/upvote/{{ post.id }}" data-async-post>
       <button
         class="vote-button vote-up{% if post.vote.value == 1 %} is-active{% endif %}"
         type="submit"
         aria-label="Upvote"
+        aria-pressed="{{ 'true' if post.vote.value == 1 else 'false' }}"
       >
         <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
           <polyline points="1,11 8,4 15,11"></polyline>
@@ -16,11 +17,12 @@
     <div class="post-score">
       {{ "%02d" % ((post.score * 100) | round(0, "floor") | int) }}
     </div>
-    <form method="post" action="/downvote/{{ post.id }}">
+    <form method="post" action="/downvote/{{ post.id }}" data-async-post>
       <button
         class="vote-button vote-down{% if post.vote.value == -1 %} is-active{% endif %}"
         type="submit"
         aria-label="Downvote"
+        aria-pressed="{{ 'true' if post.vote.value == -1 else 'false' }}"
       >
         <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
           <polyline points="1,5 8,12 15,5"></polyline>
@@ -31,7 +33,7 @@
   <div class="post-body">
 	<div class="post-text">
 	  <div class="post-title">
-		<a href="/read/{{ post.id }}">{{ post.title }}</a>
+		<a href="/read/{{ post.id }}" target="_blank" rel="noopener noreferrer"{% if not post.is_read %} data-mark-read-url="/mark-read/{{ post.id }}"{% endif %}>{{ post.title }}</a>
 	  </div>
 
 	  <div class="post-meta">
@@ -53,9 +55,9 @@
 		{% if post.comments %}
 		· <a href="{{post.comments}}">Comments</a>
 		{% endif %}
-		{% if not post.is_read %}
-		· <a href="/mark-read/{{ post.id }}">Mark Read</a>
-		{% endif %}
+		· <form class="post-read-action" method="post" action="/{{ 'mark-unread' if post.is_read else 'mark-read' }}/{{ post.id }}" data-async-post>
+		  <button type="submit">{{ 'Mark unread' if post.is_read else 'Mark read' }}</button>
+		</form>
 	  </div>
 	</div>
 

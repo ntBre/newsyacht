@@ -166,11 +166,7 @@ def test_index_missing_date(snapshot, db, client):
 
 
 def test_default_post_sorting(snapshot, db, hn_feed, hn_post, client):
-    """
-    The other `/` tests pass `?all=1` to avoid filtering out old posts.
-    Here, we insert a new post with a generated date and test that it's shown
-    while the others are filtered out.
-    """
+    """The first page includes older posts when space remains."""
     db.insert_feeds(hn_feed)
     feed_id, score, item = hn_post[0]
     new_item = deepcopy(item)
@@ -262,3 +258,157 @@ def test_reversible_votes(seeded_db, client, vote):
             for text, count in counts.items()
             if expected != Vote.NONE
         }
+
+
+def test_read_posts_stay_visible(seeded_db, client):
+    post = seeded_db.get_posts()[0]
+    seeded_db.set_read(post.id)
+
+    response = client.get("/?all=1")
+    assert post.title in response.text
+    assert 'class="post is-read"' in response.text
+
+    unread = client.get("/?all=1&unread=1")
+    assert post.title not in unread.text
+
+
+def test_read_state_can_be_reversed(seeded_db, client):
+    post = seeded_db.get_posts()[0]
+    assert client.post(f"/mark-read/{post.id}").status_code == 302
+    assert seeded_db.get_item(post.id).is_read
+
+    assert client.post(f"/mark-unread/{post.id}").status_code == 302
+    assert not seeded_db.get_item(post.id).is_read
+
+
+def test_feed_includes_read_posts(seeded_db, client):
+    post = seeded_db.get_posts()[0]
+    seeded_db.set_read(post.id)
+    assert post.title in client.get(f"/feed/{post.feed_id}").text
+
+
+def test_async_read_response(seeded_db, client):
+    post = seeded_db.get_posts()[0]
+    response = client.post(
+        f"/mark-read/{post.id}",
+        headers={"X-Newsyacht-Fragment": "post"},
+    )
+    assert response.status_code == 200
+    assert 'class="post is-read"' in response.text
+    assert "Mark unread" in response.text
+
+    response = client.post(
+        f"/mark-unread/{post.id}",
+        headers={"X-Newsyacht-Fragment": "post"},
+    )
+    assert response.status_code == 200
+    assert "Mark read" in response.text
+    assert 'class="post is-read"' not in response.text
+
+
+def test_async_vote_response(seeded_db, client):
+    post = seeded_db.get_posts()[0]
+    response = client.post(
+        f"/upvote/{post.id}",
+        headers={"X-Newsyacht-Fragment": "post"},
+    )
+    assert response.status_code == 200
+    assert "vote-up is-active" in response.text
+    assert seeded_db.get_item(post.id).vote == Vote.UP
+
+    reversed_vote = client.post(
+        f"/upvote/{post.id}", headers={"X-Newsyacht-Fragment": "post"}
+    )
+    assert reversed_vote.status_code == 200
+    assert "vote-up is-active" not in reversed_vote.text
+    assert seeded_db.get_item(post.id).vote == Vote.NONE
+
+
+def test_article_opens_in_new_tab(seeded_db, client):
+    response = client.get("/?all=1")
+    assert (
+        f'href="/read/{seeded_db.get_posts()[0].id}" target="_blank"' in response.text
+    )
+
+
+def test_paginated_posts(db, hn_feed, hn_post, client, monkeypatch):
+    monkeypatch.setattr("newsyacht.web.app.PAGE_SIZE", 1)
+    db.insert_feeds(hn_feed)
+    feed_id, _score, item = hn_post[0]
+    newer = deepcopy(item)
+    newer.title = "A newer article"
+    newer.guid = newer.title
+    db.insert_items([*hn_post, (feed_id, Score(1.0), newer)])
+
+    first = client.get("/?unread=1")
+    assert "A newer article" in first.text
+    assert item.title not in first.text
+    assert "Show more" in first.text
+    cursor_id = db.get_posts()[0].id
+
+    # The keyset cursor still works after marking its article read.
+    db.set_read(cursor_id)
+    second = client.get(
+        f"/?before={cursor_id}&unread=1",
+        headers={"X-Newsyacht-Fragment": "posts"},
+    )
+    assert second.status_code == 200
+    assert "<html" not in second.text
+    assert "X-Newsyacht-Fragment" in second.vary
+    assert item.title in client.get(f"/?before={cursor_id}&unread=1").text
+    assert item.title in second.text
+    assert "A newer article" not in second.text
+    assert second.headers.get("X-Newsyacht-Next") is None
+
+
+@pytest.mark.parametrize("before", ["bogus", "0", "9223372036854775808"])
+def test_invalid_page_cursor(client, before):
+    assert client.get(f"/?before={before}").status_code == 400
+
+
+def test_feed_tags_filter_posts(db, hn_post, client):
+    db.insert_feeds(
+        [
+            ConfigFeed(link="https://news.ycombinator.com/rss", tags=["software"]),
+            ConfigFeed(link="https://example.com/philosophy.xml", tags=["philosophy"]),
+        ]
+    )
+    feed_id, score, item = hn_post[0]
+    other = deepcopy(item)
+    other.title = "Philosophy article"
+    other.guid = other.title
+    db.insert_items([(feed_id, score, item), (FeedId(2), score, other)])
+
+    assert len(db.get_posts()) == 2
+    assert len(db.get_posts(tag="software")) == 1
+    assert db.get_tags() == ["philosophy", "software"]
+
+    response = client.get("/?tag=software")
+    assert item.title in response.text
+    assert "Philosophy article" not in response.text
+    assert 'class="tag-navigation"' in response.text
+    assert 'aria-current="page">software</a>' in response.text
+
+    fragment = client.get("/?tag=software", headers={"X-Newsyacht-Fragment": "page"})
+    assert fragment.status_code == 200
+    assert '<main id="main-content">' in fragment.text
+    assert "<html" not in fragment.text
+
+
+def test_tag_pagination_preserves_filter(db, hn_feed, hn_post, client, monkeypatch):
+    monkeypatch.setattr("newsyacht.web.app.PAGE_SIZE", 1)
+    db.insert_feeds([ConfigFeed(link=hn_feed[0].link, tags=["software"])])
+    feed_id, _score, item = hn_post[0]
+    other = deepcopy(item)
+    other.title = "Second software article"
+    other.guid = other.title
+    db.insert_items([(feed_id, Score(0.9), item), (feed_id, Score(0.8), other)])
+    response = client.get(
+        "/?tag=software&unread=1", headers={"X-Newsyacht-Fragment": "posts"}
+    )
+    assert "tag=software" in response.headers["X-Newsyacht-Next"]
+    assert "unread=1" in response.headers["X-Newsyacht-Next"]
+
+    next_page = client.get(response.headers["X-Newsyacht-Next"])
+    assert other.title in next_page.text
+    assert 'data-read-filter="unread"' in next_page.text
