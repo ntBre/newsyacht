@@ -110,7 +110,12 @@ class Db:
             )
 
     def get_posts(
-        self, days: int | None = None, read: bool | None = None
+        self,
+        days: int | None = None,
+        read: bool | None = None,
+        *,
+        limit: int | None = None,
+        before: int | None = None,
     ) -> list[DbItem]:
         """
         Get posts from the database, optionally filtered by `days` and `read`.
@@ -139,15 +144,37 @@ class Db:
                 read_filter = "items.is_read = 0"
 
         link_filter = "items.link IS NOT NULL"
-
-        return self._get_posts(link_filter, date_filter, read_filter)
+        # Keyset pagination: the cursor remains valid even when the last
+        # displayed article is marked read and disappears from Unread results.
+        before_filter = (
+            """(
+                COALESCE(substr(items.date, 1, 10), ''), items.score, items.id
+            ) < (
+                SELECT COALESCE(substr(cursor.date, 1, 10), ''),
+                       cursor.score, cursor.id
+                FROM items AS cursor WHERE cursor.id = ?
+            )"""
+            if before is not None
+            else ""
+        )
+        return self._get_posts(
+            link_filter,
+            date_filter,
+            read_filter,
+            before_filter,
+            params=(before,) if before is not None else (),
+            limit=limit,
+        )
 
     def get_posts_by_id(self, feed_id: FeedId) -> list[DbItem]:
         return self._get_posts("items.feed_id = ?", params=(feed_id,))
 
-    def _get_posts(self, *filters, params=()) -> list[DbItem]:
+    def _get_posts(self, *filters, params=(), limit: int | None = None) -> list[DbItem]:
         filters = [f for f in filters if f]
         filter_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        page_clause = "LIMIT ?" if limit is not None else ""
+        if limit is not None:
+            params = (*params, limit)
 
         cur = self.conn.execute(
             f"""
@@ -170,7 +197,9 @@ class Db:
             JOIN feeds
             ON feeds.id = items.feed_id
             {filter_clause}
-            ORDER BY substr(items.date, 1, 10) DESC, items.score DESC
+            ORDER BY COALESCE(substr(items.date, 1, 10), '') DESC,
+                     items.score DESC, items.id DESC
+            {page_clause}
             """,
             params,
         )

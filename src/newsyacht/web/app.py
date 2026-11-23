@@ -2,7 +2,7 @@ import logging
 import re
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 from newsyacht import models
 from newsyacht.db import Db
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig()
 
 HEX_COLOR = re.compile(r"#([a-zA-Z0-9]{6})")
+PAGE_SIZE = 50
 
 
 def label_text_color(color: str) -> str:
@@ -58,12 +59,35 @@ class App:
         @self.app.route("/")
         def index():
             unread_only = request.args.get("unread") == "1"
+            before = request.args.get("before", type=int)
+            if "before" in request.args and (before is None or not 0 < before < 2**63):
+                abort(400)
+
             with Db(self.db) as db:
                 posts = db.get_posts(
-                    days=None if request.args.get("all") else 3,
                     read=False if unread_only else None,
+                    limit=PAGE_SIZE + 1,
+                    before=before,
                 )
-            return render_template("index.html", posts=posts, unread_only=unread_only)
+            has_more = len(posts) > PAGE_SIZE
+            posts = posts[:PAGE_SIZE]
+            more_url = (
+                url_for("index", before=posts[-1].id, unread=1 if unread_only else None)
+                if has_more
+                else None
+            )
+
+            fragment = request.headers.get("X-Newsyacht-Fragment") == "posts"
+            template = "posts_fragment.html" if fragment else "index.html"
+            response = self.app.make_response(
+                render_template(
+                    template, posts=posts, unread_only=unread_only, more_url=more_url
+                )
+            )
+            response.vary.add("X-Newsyacht-Fragment")
+            if fragment and more_url:
+                response.headers["X-Newsyacht-Next"] = more_url
+            return response
 
         @self.app.route("/archive")
         def archive():

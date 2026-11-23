@@ -67,3 +67,56 @@ document.addEventListener("click", (event) => {
   link.href = articleUrl.href;
   void updatePost(link.dataset.markReadUrl, row);
 });
+
+// Fallback links still work without JS: the next batch becomes a full page.
+document.addEventListener("click", async (event) => {
+  const more = event.target.closest("a[data-show-more]");
+  if (
+    !more ||
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    event.shiftKey
+  )
+    return;
+  event.preventDefault();
+  if (more.dataset.pending === "1") return;
+  more.dataset.pending = "1";
+  more.textContent = "Loading…";
+  try {
+    const response = await fetch(more.href, {
+      credentials: "same-origin",
+      headers: { "X-Newsyacht-Fragment": "posts" },
+    });
+    if (!response.ok)
+      throw new Error(`Failed to load posts (${response.status})`);
+    const template = document.createElement("template");
+    template.innerHTML = await response.text();
+    if (!more.isConnected) return;
+    const list = document.getElementById("post-list");
+    if (!list) throw new Error("Missing post list");
+    const existing = new Set(
+      [...list.querySelectorAll(".post")].map((row) => row.dataset.postId),
+    );
+    for (const row of template.content.querySelectorAll(".post")) {
+      if (!existing.has(row.dataset.postId)) {
+        list.append(row);
+        existing.add(row.dataset.postId);
+      }
+    }
+    const next = response.headers.get("X-Newsyacht-Next");
+    if (next) {
+      more.href = next;
+      more.textContent = "Show more";
+    } else {
+      more.remove();
+    }
+  } catch (error) {
+    console.error(error);
+    more.textContent = "Retry loading posts";
+  } finally {
+    more.dataset.pending = "0";
+  }
+});

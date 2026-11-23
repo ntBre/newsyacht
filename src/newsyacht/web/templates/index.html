@@ -4,12 +4,10 @@
   <body>
 	{% include "nav.html" %}
 	<div id="ptr">Pull to refresh…</div>
-	{% import "posts.html" as p %}
 	<h2>{{ 'Unread' if unread_only else 'Recent' }}</h2>
-	<ul class="post-list"{% if unread_only %} data-read-filter="unread"{% endif %}>
-	  {% for post in posts %}
-	  {{ p.render_post(post) }}
-	  {% endfor %}
+	<ul class="post-list" id="post-list"{% if unread_only %} data-read-filter="unread"{% endif %}>
+	  {% include "posts_fragment.html" %}
 	</ul>
+	{% if more_url %}<a href="{{ more_url }}" data-show-more>Show more</a>{% endif %}
   </body>
 </html>

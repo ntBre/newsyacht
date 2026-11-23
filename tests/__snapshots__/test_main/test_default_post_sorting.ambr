@@ -18,11 +18,11 @@
     <a href="/archive">Read</a>
   </nav>
   	<div id="ptr">Pull to refresh…</div>
-  	
   	<h2>Recent</h2>
-  	<ul class="post-list">
+  	<ul class="post-list" id="post-list">
   	  
-  	  
+  
+  
   
   <li class="post" data-post-id="2">
     <div class="post-vote">
@@ -90,8 +90,78 @@
   </li>
   
   
-  	  
+  
+  
+  
+  <li class="post" data-post-id="1">
+    <div class="post-vote">
+      <form method="post" action="/upvote/1" data-async-post>
+        <button
+          class="vote-button vote-up"
+          type="submit"
+          aria-label="Upvote"
+          aria-pressed="false"
+        >
+          <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <polyline points="1,11 8,4 15,11"></polyline>
+          </svg>
+        </button>
+      </form>
+      <div class="post-score">
+        90
+      </div>
+      <form method="post" action="/downvote/1" data-async-post>
+        <button
+          class="vote-button vote-down"
+          type="submit"
+          aria-label="Downvote"
+          aria-pressed="false"
+        >
+          <svg class="vote-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <polyline points="1,5 8,12 15,5"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
+    <div class="post-body">
+  	<div class="post-text">
+  	  <div class="post-title">
+  		<a href="/read/1" target="_blank" rel="noopener noreferrer" data-mark-read-url="/mark-read/1">Linux Sandboxes and Fil-C</a>
+  	  </div>
+  
+  	  <div class="post-meta">
+  		<span
+  		  class="post-author"
+  		  
+  		  style="background-color:#ff6600; color: #fff"
+  		  
+  		  ><a href="/feed/1">None</a></span>
+  		
+  		·
+  		<time
+  		  datetime="<DATE>T22:58:29+00:00"
+  		  title="<DATE> 22:58:29 UTC"
+  		  >
+  		  <DATE>
+  		</time>
+  		
+  		
+  		· <a href="https://news.ycombinator.com/item?id=46259064">Comments</a>
+  		
+  		· <form class="post-read-action" method="post" action="/mark-read/1" data-async-post>
+  		  <button type="submit">Mark read</button>
+  		</form>
+  	  </div>
+  	</div>
+  
+  	
+    </div>
+  </li>
+  
+  
+  
   	</ul>
+  	
     </body>
   </html>
   '''

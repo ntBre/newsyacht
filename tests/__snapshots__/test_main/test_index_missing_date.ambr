@@ -18,11 +18,11 @@
     <a href="/archive">Read</a>
   </nav>
   	<div id="ptr">Pull to refresh…</div>
-  	
   	<h2>Recent</h2>
-  	<ul class="post-list">
+  	<ul class="post-list" id="post-list">
   	  
-  	  
+  
+  
   
   <li class="post" data-post-id="1">
     <div class="post-vote">
@@ -78,8 +78,9 @@
   </li>
   
   
-  	  
+  
   	</ul>
+  	
     </body>
   </html>
   '''
